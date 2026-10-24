@@ -1,0 +1,95 @@
+# Decisions made without consultation
+
+You asked me to build the first version without checking in with you.
+These are the calls I would otherwise have asked you about, with the reasoning.
+Each one can be revisited.
+
+## Product
+
+1. **Name: "Aaron".** Taken from the project directory. The bundle identifier
+   is `net.gaivo.Aaron`.
+2. **AI goes through command-line tools, not HTTP APIs.** You asked to use
+   existing Claude/OpenAI subscriptions. Providers are configurable shell
+   commands that read the prompt on stdin and print the answer. The defaults
+   are `claude -p` (Claude Code) and `codex exec` (OpenAI Codex). No API keys
+   are stored.
+3. **Default Claude invocation disables tools** (`--tools ""`), which makes
+   checks faster and keeps the AI from touching files. For fact checking with
+   web access, define a second provider that allows `WebSearch`/`WebFetch`.
+   The user guide shows how.
+4. **Review mode is a separate mode.** It is entered from the toolbar or by
+   running an AI action. While an action runs the editor is read-only (with a
+   Cancel button). After results arrive you can keep editing. Edits shift the
+   highlights that follow them; suggestions whose text you changed become
+   "stale" and can only be dismissed. This follows the ChatGPT discussion:
+   block edits while the AI is working, and shift/invalidate afterwards.
+5. **Results from several actions accumulate** in one list, labelled by
+   action, until you clear them or leave review mode. They are not saved with
+   the document.
+6. **Running an action on a selection** sends the whole document for context
+   but asks the AI to comment only on the selected passage.
+7. **Unresolvable suggestions are shown, not hidden.** If the AI's quotation
+   cannot be found in the text, or matches more than one place, the
+   suggestion appears in the list marked "Not found in text", without a
+   highlight, and can only be dismissed. One relaxation: if the surrounding
+   context does not match but the quoted text occurs exactly once, that
+   occurrence is used.
+8. **Undoing an accepted suggestion** restores the text (normal ⌘Z) but does
+   not move the suggestion back to "open".
+9. **Pelican mode is detected automatically**. A document counts as a Pelican
+   post when it starts with a `Key: value` metadata block containing `Title:`.
+   Detection can be forced on or off globally in Settings.
+10. **Tag completion** works on the `Tags:` metadata line. The completion
+    list opens as you type (after the first character of a tag) and also on
+    Esc / ⌥⎋ (the standard macOS completion keys). Candidates are ranked by
+    prefix match first, then by how often the tag is used, then by substring
+    match. Tags already on the line are left out.
+11. **Preview renderers are chosen per window** from a menu in the preview
+    panel. Settings decide the default for Pelican documents and for other
+    documents separately. The built-in renderer is always available.
+12. **The built-in preview strips the metadata block** and shows the title
+    and metadata as a small header above the rendered text, so previews of
+    Pelican posts are still readable without a Pelican renderer.
+13. **External renderers get the unsaved buffer on stdin.** They also get the
+    file's location through placeholders, so tools that need the real path
+    (for example for `{filename}` links) still work.
+    `{tmpfile}` is a temporary copy of the buffer that has the original file
+    name, for tools that cannot read stdin.
+14. **Theme assets for external previews** (CSS, images under `/articles/…`)
+    are served from local directories that you map in the renderer's settings.
+    Without a mapping, relative URLs resolve against the document's folder.
+15. **Configuration is one JSON file** in Application Support. It is editable
+    in the Settings window and by hand. There is no per-project
+    configuration in this version. Commands can use placeholders such as
+    `{dir}` to adapt to where a document lives, which covers the blog case.
+16. **Editor font**: the system font at 15 pt by default, with a Settings option
+    to switch to monospaced and to change the size. Lines wrap softly
+    (your paragraphs are long single lines).
+17. **A status bar** shows the word count, character count and document mode
+    (Markdown or Pelican). This was not requested but is cheap and useful when
+    writing posts.
+18. **Syntax highlighting** is light: headings, emphasis, inline code and code
+    blocks, links, block quotes, list markers and the metadata block.
+
+## Technical
+
+19. **SwiftUI app with an AppKit `NSTextView`** for editing. SwiftUI
+    `DocumentGroup` handles documents (open, save, autosave, versions,
+    recent files). `NSTextView` provides undo, native completion popups,
+    find, spelling and highlighting.
+20. **The logic lives in a Swift package** (four libraries) that is tested
+    with `swift test`. The Xcode project, generated with XcodeGen from
+    `App/project.yml`, contains only the app layer and UI tests. The
+    generated `.xcodeproj` is not committed.
+21. **swift-markdown (Apple, cmark-gfm)** is the built-in Markdown engine:
+    CommonMark plus GitHub tables and strikethrough. It is the only
+    third-party dependency.
+22. **The app is not sandboxed**, because it has to run external tools
+    (Pelican scripts, `claude`, `codex`) and read theme assets anywhere on
+    disk.
+23. **Commands run through `/bin/zsh -l -c`** so that your login `PATH`
+    applies, and `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin` are
+    added to `PATH` as well, because apps started from Finder do not inherit
+    your shell's environment.
+24. **Timeouts**: 30 s for preview commands, 15 s for tag commands and 300 s
+    for AI providers. Each can be changed per command.
