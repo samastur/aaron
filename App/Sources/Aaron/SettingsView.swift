@@ -248,6 +248,17 @@ private struct PelicanSettingsView: View {
                     }
                 }
             }
+            Section("Markdown Help") {
+                LabeledContent("Plugins command") {
+                    CommandEditor(text: $appModel.configuration.pelican.pluginsCommand)
+                }
+                Text("Prints the names of the site's plugins, one per line, so Help ▸ Markdown Help can explain them. Runs in the post's folder; placeholders such as {dir} refer to the post.")
+                    .font(.caption).foregroundStyle(.secondary)
+                TextField("Help folder", text: optional($appModel.configuration.pelican.helpDirectory),
+                          prompt: Text("optional, e.g. ~/blog/aaron-help"))
+                Text("Your own help files, named after the plugin (e.g. my_plugin.md); they replace Aaron's.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("New post template") {
                 TextEditor(text: $appModel.configuration.pelican.newPostTemplate)
                     .font(.body.monospaced())

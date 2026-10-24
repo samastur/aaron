@@ -15,6 +15,9 @@ final class AppModel {
         didSet { if configuration != oldValue { scheduleSave() } }
     }
 
+    /// What the Markdown Help window shows: chosen when it is opened.
+    var helpRequest = HelpRequest(isPelican: false, fileURL: nil)
+
     /// Set when the configuration file could not be read or written.
     var configurationError: String?
     /// The file on disk could not be parsed; it is not overwritten until it

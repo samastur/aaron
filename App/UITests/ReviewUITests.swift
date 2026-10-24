@@ -63,6 +63,31 @@ final class ReviewUITests: AaronUITestCase {
         waitFor(app.staticTexts["reviewSummary"])
     }
 
+    func testAcceptedSuggestionCanBeRevertedAndDismissedOneReopened() throws {
+        try launch(document: try writeDocument("revert.md", story))
+        let editor = app.textViews["editor"]
+        waitFor(editor)
+        runCheck()
+        waitFor(app.staticTexts["Spelling mistake."], timeout: 20)
+        app.buttons["acceptSuggestion"].firstMatch.click()
+        waitUntil { (editor.value as? String)?.contains("saw the quick") == true }
+        app.buttons["dismissSuggestion"].firstMatch.click()
+        waitUntil { !self.app.staticTexts["Consider a stronger verb."].exists }
+
+        app.checkBoxes["Show handled"].click()
+        let revert = app.buttons["revertSuggestion"]
+        waitFor(revert)
+        revert.click()
+        waitUntil { (editor.value as? String)?.contains("saw teh quick") == true }
+        let reopen = app.buttons["reopenSuggestion"]
+        waitFor(reopen)
+        reopen.click()
+        waitUntil { !self.app.buttons["reopenSuggestion"].exists }
+        screenshot("reverted-and-reopened")
+        // Both are open again: two Dismiss buttons plus the unlocatable one.
+        waitUntil { self.app.buttons.matching(identifier: "dismissSuggestion").count == 3 }
+    }
+
     func testToolbarTogglesReviewPanel() throws {
         try launch(document: try writeDocument("panel.md", story))
         waitFor(app.textViews["editor"])

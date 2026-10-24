@@ -15,7 +15,7 @@ struct SuggestionsPanel: View {
                 ErrorNote(message: error) { model.aiError = nil }
             } else if let notice = model.aiNotice {
                 Text(notice)
-                    .font(.callout)
+                    .font(.system(size: ReviewFont.body))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
@@ -26,14 +26,17 @@ struct SuggestionsPanel: View {
                 emptyState
             } else {
                 ScrollViewReader { proxy in
-                    List(selection: Binding(
-                        get: { model.selectedSuggestionID },
-                        set: { model.select($0) })) {
-                        ForEach(model.visibleSuggestions) { suggestion in
-                            SuggestionRow(suggestion: suggestion, model: model)
-                                .tag(suggestion.id)
-                                .id(suggestion.id)
+                    // A plain stack rather than a List: the system selection
+                    // colours made the text hard to read.
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                            ForEach(model.visibleSuggestions) { suggestion in
+                                SuggestionRow(suggestion: suggestion, model: model,
+                                              isSelected: suggestion.id == model.selectedSuggestionID)
+                                    .id(suggestion.id)
+                            }
                         }
+                        .padding(8)
                     }
                     .accessibilityIdentifier("suggestionsList")
                     .onChange(of: model.selectedSuggestionID) { _, id in
@@ -63,13 +66,13 @@ struct SuggestionsPanel: View {
             if let name = model.runningActionName {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Running “\(name)”…").font(.callout)
+                    Text("Running “\(name)”…").font(.system(size: ReviewFont.body))
                     Spacer()
                     Button("Cancel") { model.cancelAction() }
                         .accessibilityIdentifier("cancelAction")
                 }
                 Text("Editing is paused until the AI answers.")
-                    .font(.caption)
+                    .font(.system(size: ReviewFont.small))
                     .foregroundStyle(.secondary)
             }
         }
@@ -85,7 +88,7 @@ struct SuggestionsPanel: View {
             Text(model.session.suggestions.isEmpty ? "No suggestions yet" : "All suggestions handled")
                 .font(.headline)
             Text("Choose an action from Run. Select text first to review only that passage.")
-                .font(.callout)
+                .font(.system(size: ReviewFont.body))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Spacer()
@@ -97,7 +100,7 @@ struct SuggestionsPanel: View {
     private var footer: some View {
         HStack {
             Text(summary)
-                .font(.caption)
+                .font(.system(size: ReviewFont.small))
                 .lineLimit(1)
                 .fixedSize()
                 .foregroundStyle(.secondary)
@@ -105,7 +108,8 @@ struct SuggestionsPanel: View {
             Spacer()
             Toggle("Show handled", isOn: $model.showHandledSuggestions)
                 .toggleStyle(.checkbox)
-                .font(.caption)
+                .font(.system(size: ReviewFont.small))
+                .help("Also list accepted and dismissed suggestions, to revert or reopen them")
             Button("Clear") { model.clearSuggestions() }
                 .disabled(model.session.suggestions.isEmpty || model.isRunningAction)
                 .help("Remove all suggestions")
@@ -133,7 +137,7 @@ private struct ErrorNote: View {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             ScrollView {
                 Text(message)
-                    .font(.callout)
+                    .font(.system(size: ReviewFont.body))
                     .accessibilityIdentifier("aiErrorMessage")
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -148,47 +152,88 @@ private struct ErrorNote: View {
     }
 }
 
+/// Text sizes in the review panel.
+enum ReviewFont {
+    static let body: CGFloat = 14
+    static let small: CGFloat = 12
+}
+
 struct SuggestionRow: View {
     let suggestion: Suggestion
     let model: DocumentWindowModel
+    let isSelected: Bool
+
+    private var isHandled: Bool { suggestion.status == .accepted || suggestion.status == .dismissed }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 6) {
                 Text(suggestion.category?.capitalized ?? suggestion.actionName)
-                    .font(.caption.bold())
-                    .padding(.horizontal, 6)
+                    .font(.system(size: ReviewFont.small, weight: .semibold))
+                    .padding(.horizontal, 7)
                     .padding(.vertical, 2)
-                    .background(Color(nsColor: EditorStyles.suggestionColor(suggestion)).opacity(0.2),
+                    .background(Color(nsColor: EditorStyles.suggestionColor(suggestion)).opacity(0.22),
                                 in: Capsule())
                 if suggestion.category != nil {
-                    Text(suggestion.actionName).font(.caption).foregroundStyle(.secondary)
+                    Text(suggestion.actionName)
+                        .font(.system(size: ReviewFont.small))
+                        .foregroundStyle(.secondary)
                 }
                 Spacer()
                 statusBadge
             }
             if !suggestion.message.isEmpty {
                 Text(suggestion.message)
-                    .font(.callout)
+                    .font(.system(size: ReviewFont.body))
                     .fixedSize(horizontal: false, vertical: true)
             }
             changeView
-            if suggestion.status == .open || suggestion.status == .stale
-                || suggestion.status == .notFound || suggestion.status == .ambiguous {
-                HStack {
-                    if suggestion.replacement != nil && suggestion.status == .open {
-                        Button("Accept") { model.accept(suggestion.id) }
-                            .disabled(!suggestion.canAccept || model.isRunningAction)
-                            .accessibilityIdentifier("acceptSuggestion")
-                    }
-                    Button("Dismiss") { model.dismiss(suggestion.id) }
-                        .accessibilityIdentifier("dismissSuggestion")
+            buttons
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(isSelected ? Color(nsColor: EditorStyles.suggestionSelectionColor(suggestion)) : .clear,
+                    in: RoundedRectangle(cornerRadius: 8))
+        .overlay(alignment: .bottom) {
+            if !isSelected { Divider().padding(.horizontal, 10) }
+        }
+        .opacity(isHandled ? 0.7 : 1)
+        .contentShape(Rectangle())
+        .onTapGesture { model.select(suggestion.id) }
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    @ViewBuilder private var buttons: some View {
+        HStack {
+            switch suggestion.status {
+            case .open:
+                if suggestion.replacement != nil {
+                    Button("Accept") { model.accept(suggestion.id) }
+                        .disabled(!suggestion.canAccept || model.isRunningAction)
+                        .accessibilityIdentifier("acceptSuggestion")
                 }
-                .controlSize(.small)
+                Button("Dismiss") { model.dismiss(suggestion.id) }
+                    .accessibilityIdentifier("dismissSuggestion")
+            case .stale, .notFound, .ambiguous:
+                Button("Dismiss") { model.dismiss(suggestion.id) }
+                    .accessibilityIdentifier("dismissSuggestion")
+            case .accepted:
+                Button("Revert") { model.restore(suggestion.id) }
+                    .disabled(!model.canRestore(suggestion.id))
+                    .help(model.canRestore(suggestion.id)
+                          ? "Put the original text back and reopen the suggestion"
+                          : "The text was edited since, so the original can't be put back")
+                    .accessibilityIdentifier("revertSuggestion")
+            case .dismissed:
+                Button("Reopen") { model.restore(suggestion.id) }
+                    .disabled(!model.canRestore(suggestion.id))
+                    .help(model.canRestore(suggestion.id)
+                          ? "Show the suggestion again"
+                          : "The text it refers to was edited since")
+                    .accessibilityIdentifier("reopenSuggestion")
             }
         }
-        .padding(.vertical, 4)
-        .opacity(suggestion.status == .accepted || suggestion.status == .dismissed ? 0.55 : 1)
     }
 
     @ViewBuilder private var changeView: some View {
@@ -200,8 +245,8 @@ struct SuggestionRow: View {
                 Text(styled(replacement.isEmpty ? "(remove)" : replacement, color: .systemGreen, strikethrough: false))
             }
         }
-        .font(.callout.monospaced())
-        .lineLimit(6)
+        .font(.system(size: ReviewFont.body, design: .monospaced))
+        .lineLimit(8)
         .textSelection(.enabled)
     }
 
@@ -216,16 +261,16 @@ struct SuggestionRow: View {
     @ViewBuilder private var statusBadge: some View {
         switch suggestion.status {
         case .open: EmptyView()
-        case .accepted: Label("Accepted", systemImage: "checkmark").font(.caption).foregroundStyle(.green)
-        case .dismissed: Label("Dismissed", systemImage: "xmark").font(.caption).foregroundStyle(.secondary)
+        case .accepted: Label("Accepted", systemImage: "checkmark").font(.system(size: ReviewFont.small)).foregroundStyle(.green)
+        case .dismissed: Label("Dismissed", systemImage: "xmark").font(.system(size: ReviewFont.small)).foregroundStyle(.secondary)
         case .stale:
-            Label("Text changed", systemImage: "pencil.slash").font(.caption).foregroundStyle(.orange)
+            Label("Text changed", systemImage: "pencil.slash").font(.system(size: ReviewFont.small)).foregroundStyle(.orange)
                 .help("The text this suggestion refers to was edited, so it can no longer be applied.")
         case .notFound:
-            Label("Not found in text", systemImage: "questionmark.circle").font(.caption).foregroundStyle(.orange)
+            Label("Not found in text", systemImage: "questionmark.circle").font(.system(size: ReviewFont.small)).foregroundStyle(.orange)
                 .help("The AI quoted text that does not appear in the document.")
         case .ambiguous:
-            Label("Ambiguous", systemImage: "questionmark.circle").font(.caption).foregroundStyle(.orange)
+            Label("Ambiguous", systemImage: "questionmark.circle").font(.system(size: ReviewFont.small)).foregroundStyle(.orange)
                 .help("The quoted text appears in several places and could not be located exactly.")
         }
     }

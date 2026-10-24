@@ -104,27 +104,65 @@ public struct ReviewSession: Equatable, Sendable {
     }
 
     /// Marks the suggestion accepted and returns the edit to apply, after
-    /// checking that the text at its range is still what was quoted.
+    /// checking that the text at its range is still what was quoted. The
+    /// session already accounts for the edit (other suggestions move, the
+    /// accepted one remembers where its replacement is); apply it to the
+    /// text without passing it to `applyEdit`.
     public mutating func accept(_ id: UUID, in text: String) -> TextEdit? {
         guard let index = suggestions.firstIndex(where: { $0.id == id }),
               suggestions[index].canAccept,
               let range = suggestions[index].range,
               let replacement = suggestions[index].replacement else { return nil }
-        let current = text as NSString
-        guard NSMaxRange(range) <= current.length,
-              current.substring(with: range) == suggestions[index].original else {
+        guard matches(text, range, suggestions[index].original) else {
             markStale(index)
             return nil
         }
+        let edit = TextEdit(range: range, replacement: replacement)
+        applyEdit(edit, excluding: id)
         suggestions[index].status = .accepted
-        suggestions[index].range = nil
-        return TextEdit(range: range, replacement: replacement)
+        suggestions[index].range = NSRange(location: range.location, length: (replacement as NSString).length)
+        return edit
     }
 
+    /// Hides the suggestion. It keeps following the text, so it can be
+    /// reopened later.
     public mutating func dismiss(_ id: UUID) {
         guard let index = suggestions.firstIndex(where: { $0.id == id }) else { return }
         suggestions[index].status = .dismissed
-        suggestions[index].range = nil
+    }
+
+    /// Whether an accepted suggestion can be reverted or a dismissed one
+    /// reopened: the text it refers to must be unchanged.
+    public func canRestore(_ id: UUID, in text: String) -> Bool {
+        guard let suggestion = suggestion(withID: id), let range = suggestion.range else { return false }
+        switch suggestion.status {
+        case .accepted: return matches(text, range, suggestion.replacement ?? "")
+        case .dismissed: return matches(text, range, suggestion.original)
+        default: return false
+        }
+    }
+
+    /// Undoes accepting: returns the edit that puts the original text back
+    /// (already accounted for, like `accept`) and reopens the suggestion.
+    public mutating func revert(_ id: UUID, in text: String) -> TextEdit? {
+        guard let index = suggestions.firstIndex(where: { $0.id == id }),
+              suggestions[index].status == .accepted, canRestore(id, in: text),
+              let range = suggestions[index].range else { return nil }
+        let original = suggestions[index].original
+        let edit = TextEdit(range: range, replacement: original)
+        applyEdit(edit, excluding: id)
+        suggestions[index].status = .open
+        suggestions[index].range = NSRange(location: range.location, length: (original as NSString).length)
+        return edit
+    }
+
+    /// Reopens a dismissed suggestion if its text is unchanged.
+    @discardableResult
+    public mutating func reopen(_ id: UUID, in text: String) -> Bool {
+        guard let index = suggestions.firstIndex(where: { $0.id == id }),
+              suggestions[index].status == .dismissed, canRestore(id, in: text) else { return false }
+        suggestions[index].status = .open
+        return true
     }
 
     public mutating func clear() {
@@ -132,19 +170,33 @@ public struct ReviewSession: Equatable, Sendable {
     }
 
     /// Updates ranges after the document was edited: later suggestions move,
-    /// earlier ones stay, overlapping ones become stale.
+    /// earlier ones stay. Open suggestions the edit overlaps become stale;
+    /// handled ones lose their position and can no longer be restored.
     public mutating func applyEdit(_ edit: TextEdit) {
+        applyEdit(edit, excluding: nil)
+    }
+
+    private mutating func applyEdit(_ edit: TextEdit, excluding excluded: UUID?) {
         let editEnd = NSMaxRange(edit.range)
-        for index in suggestions.indices {
-            guard suggestions[index].status == .open, let range = suggestions[index].range else { continue }
+        for index in suggestions.indices where suggestions[index].id != excluded {
+            guard let range = suggestions[index].range else { continue }
+            let status = suggestions[index].status
+            guard status == .open || status == .accepted || status == .dismissed else { continue }
             if NSMaxRange(range) <= edit.range.location {
                 continue
             } else if range.location >= editEnd {
                 suggestions[index].range = NSRange(location: range.location + edit.delta, length: range.length)
-            } else {
+            } else if status == .open {
                 markStale(index)
+            } else {
+                suggestions[index].range = nil
             }
         }
+    }
+
+    private func matches(_ text: String, _ range: NSRange, _ expected: String) -> Bool {
+        let current = text as NSString
+        return NSMaxRange(range) <= current.length && current.substring(with: range) == expected
     }
 
     /// The open suggestion covering `location`, preferring the shortest one.

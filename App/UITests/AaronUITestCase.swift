@@ -34,7 +34,8 @@ class AaronUITestCase: XCTestCase {
             "aiProviders": [["id": "fake", "name": "Fake AI", "command": aiCommand ?? script("fake-ai.sh"), "timeoutSeconds": 20]],
             "aiActions": [["id": "check", "name": "Check Everything", "prompt": "Check the text.", "providerID": "fake"]],
             "previewRenderers": [["id": "external", "name": "Fake External", "command": script("fake-preview.sh")]],
-            "pelican": ["tagsCommand": script("fake-tags.sh")],
+            "pelican": ["tagsCommand": script("fake-tags.sh"),
+                        "pluginsCommand": "printf 'pelican.plugins.simple_footnotes\\nmystery_plugin\\n'"],
         ]
         config.merge(extraConfig) { _, new in new }
         let configURL = workDirectory.appendingPathComponent("config.json")

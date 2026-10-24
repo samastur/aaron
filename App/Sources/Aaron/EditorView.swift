@@ -53,8 +53,9 @@ struct EditorView: NSViewRepresentable {
         Coordinator(text: $text, model: model)
     }
 
-    func makeNSView(context: Context) -> NSScrollView {
-        // TextKit 1 stack: lets suggestion highlights use temporary attributes.
+    /// The editor's text view on a TextKit 1 stack, which lets suggestion
+    /// highlights use temporary attributes.
+    static func makeTextView() -> MarkdownTextView {
         let storage = NSTextStorage()
         let layoutManager = NSLayoutManager()
         storage.addLayoutManager(layoutManager)
@@ -82,7 +83,12 @@ struct EditorView: NSViewRepresentable {
         textView.smartInsertDeleteEnabled = false
         textView.drawsBackground = true
         textView.backgroundColor = .textBackgroundColor
+        return textView
+    }
 
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = Self.makeTextView()
+        let storage = textView.textStorage!
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .noBorder
@@ -251,7 +257,7 @@ struct EditorStyles {
         case .listMarker:
             return [.foregroundColor: NSColor.systemOrange]
         case .metadataKey:
-            return [.foregroundColor: NSColor.systemTeal, .font: manager.convert(font, toHaveTrait: .boldFontMask)]
+            return [.foregroundColor: Self.metadataKeyColor, .font: manager.convert(font, toHaveTrait: .boldFontMask)]
         case .metadataValue:
             return [.foregroundColor: NSColor.secondaryLabelColor]
         }
@@ -259,5 +265,28 @@ struct EditorStyles {
 
     static func suggestionColor(_ suggestion: Suggestion) -> NSColor {
         suggestion.isComment ? .systemBlue : .systemOrange
+    }
+
+    /// Dark blue on light backgrounds (teal has too little contrast there),
+    /// teal on dark ones.
+    static let metadataKeyColor = NSColor(name: "metadataKey") { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            ? .systemTeal
+            : NSColor(srgbRed: 0.10, green: 0.27, blue: 0.55, alpha: 1)
+    }
+
+    /// Light pastel backgrounds for the selected suggestion in the review
+    /// panel: orange for changes, blue for comments, muted in dark mode.
+    static func suggestionSelectionColor(_ suggestion: Suggestion) -> NSColor {
+        let isComment = suggestion.isComment
+        return NSColor(name: nil) { appearance in
+            let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            switch (isComment, dark) {
+            case (false, false): return NSColor(srgbRed: 1.00, green: 0.92, blue: 0.82, alpha: 1)
+            case (true, false): return NSColor(srgbRed: 0.86, green: 0.92, blue: 0.99, alpha: 1)
+            case (false, true): return NSColor(srgbRed: 0.33, green: 0.25, blue: 0.16, alpha: 1)
+            case (true, true): return NSColor(srgbRed: 0.15, green: 0.23, blue: 0.33, alpha: 1)
+            }
+        }
     }
 }

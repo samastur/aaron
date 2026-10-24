@@ -35,6 +35,8 @@ targets:
         product: AaronAI
       - package: AaronKit
         product: AaronPelican
+      - package: AaronKit
+        product: AaronHelp
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.gaivo.Aaron

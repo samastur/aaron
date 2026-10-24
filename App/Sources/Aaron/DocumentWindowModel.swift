@@ -113,7 +113,22 @@ final class DocumentWindowModel {
     /// Called for every change of the text storage, including undo and
     /// accepted suggestions, so suggestion ranges stay correct.
     func recordEdit(_ edit: TextEdit) {
+        if let own = editAppliedBySession, own == edit {
+            // Accepting or reverting already updated the session.
+            editAppliedBySession = nil
+            return
+        }
         session.applyEdit(edit)
+    }
+
+    /// An edit the session produced and already accounted for, on its way
+    /// through the text view.
+    @ObservationIgnored private var editAppliedBySession: TextEdit?
+
+    private func applySessionEdit(_ edit: TextEdit, undoName: String) {
+        editAppliedBySession = edit
+        editor.apply(edit, undoName: undoName)
+        editAppliedBySession = nil
     }
 
     // MARK: - Preview
@@ -270,9 +285,28 @@ final class DocumentWindowModel {
         guard !isRunningAction else { return }
         let next = session.nextOpen(after: id)
         if let edit = session.accept(id, in: editor.currentText) {
-            editor.apply(edit, undoName: "Accept Suggestion")
+            applySessionEdit(edit, undoName: "Accept Suggestion")
             select(next?.id == id ? nil : next?.id)
         }
+    }
+
+    /// Whether a handled suggestion can be reverted (accepted) or reopened
+    /// (dismissed).
+    func canRestore(_ id: UUID) -> Bool {
+        !isRunningAction && session.canRestore(id, in: editor.currentText)
+    }
+
+    /// Reverts an accepted suggestion or reopens a dismissed one, and
+    /// selects it.
+    func restore(_ id: UUID) {
+        guard canRestore(id), let suggestion = session.suggestion(withID: id) else { return }
+        if suggestion.status == .accepted {
+            guard let edit = session.revert(id, in: editor.currentText) else { return }
+            applySessionEdit(edit, undoName: "Revert Suggestion")
+        } else {
+            session.reopen(id, in: editor.currentText)
+        }
+        select(id)
     }
 
     func dismiss(_ id: UUID) {

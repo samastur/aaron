@@ -15,6 +15,12 @@ struct AaronApp: App {
             AppCommands(appModel: appModel)
         }
 
+        Window("Markdown Help", id: HelpView.windowID) {
+            HelpView()
+                .environment(appModel)
+        }
+        .defaultSize(width: 820, height: 900)
+
         Settings {
             SettingsView()
                 .environment(appModel)

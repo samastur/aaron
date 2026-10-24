@@ -75,7 +75,7 @@ public struct Configuration: Codable, Equatable, Sendable {
 }
 
 public struct EditorSettings: Codable, Equatable, Sendable {
-    public var fontSize: Double = 15
+    public var fontSize: Double = 16
     public var monospaced = false
 
     public static let fontSizeRange: ClosedRange<Double> = 9...36
@@ -245,6 +245,10 @@ public struct PelicanSettings: Codable, Equatable, Sendable {
     public var tagsTimeoutSeconds: Double = 15
     /// Text of File ▸ New Pelican Post; `{date}` and `{day}` are filled in.
     public var newPostTemplate = PelicanSettings.defaultTemplate
+    /// Shell command printing the site's plugins, for Markdown Help.
+    public var pluginsCommand = ""
+    /// Folder with extra help files (`<plugin>.md`) for Markdown Help.
+    public var helpDirectory: String?
 
     public static let defaultTemplate = "Title: \nDate: {date}\nCategory: \nTags: \nSlug: \nStatus: draft\n\n"
 
@@ -257,10 +261,13 @@ public struct PelicanSettings: Codable, Equatable, Sendable {
         tagsWorkingDirectory = try c.decodeIfPresent(String.self, forKey: .tagsWorkingDirectory)
         tagsTimeoutSeconds = try c.decodeIfPresent(Double.self, forKey: .tagsTimeoutSeconds) ?? tagsTimeoutSeconds
         newPostTemplate = try c.decodeIfPresent(String.self, forKey: .newPostTemplate) ?? newPostTemplate
+        pluginsCommand = try c.decodeIfPresent(String.self, forKey: .pluginsCommand) ?? pluginsCommand
+        helpDirectory = try c.decodeIfPresent(String.self, forKey: .helpDirectory)
     }
 
     enum CodingKeys: String, CodingKey {
         case detection, tagsCommand, tagsWorkingDirectory, tagsTimeoutSeconds, newPostTemplate
+        case pluginsCommand, helpDirectory
     }
 }
 

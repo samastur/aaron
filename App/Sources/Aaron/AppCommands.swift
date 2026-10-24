@@ -36,6 +36,10 @@ struct AppCommands: Commands {
                 .disabled(window?.isPelican != true)
         }
 
+        CommandGroup(replacing: .help) {
+            MarkdownHelpButton(appModel: appModel, window: window)
+        }
+
         CommandMenu("Review") {
             let actions = appModel.configuration.aiActions
             ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
@@ -75,6 +79,24 @@ struct AppCommands: Commands {
         } else {
             button
         }
+    }
+}
+
+/// Help ▸ Markdown Help, for the front document.
+private struct MarkdownHelpButton: View {
+    let appModel: AppModel
+    let window: DocumentWindowModel?
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Markdown Help") {
+            appModel.helpRequest = HelpRequest(
+                isPelican: window?.isPelican ?? (appModel.configuration.pelican.detection == .always),
+                fileURL: window?.fileURL)
+            openWindow(id: HelpView.windowID)
+        }
+        // ⌘? is taken by the Help menu's search field.
+        .keyboardShortcut("m", modifiers: [.command, .shift])
     }
 }
 

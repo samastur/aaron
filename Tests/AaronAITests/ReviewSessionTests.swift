@@ -86,8 +86,7 @@ struct ReviewSessionTests {
 
     @Test func acceptingOneSuggestionShiftsLaterOnes() {
         var s = session([raw("Teh", prefix: "", replacement: "The very"), raw("happy")])
-        let edit = s.accept(s.suggestions[0].id, in: text)!
-        s.applyEdit(edit)
+        _ = s.accept(s.suggestions[0].id, in: text)!
         #expect(s.suggestions[0].status == .accepted)
         #expect(s.suggestions[1].range == NSRange(location: 36, length: 5))
         #expect(s.suggestions[1].status == .open)
@@ -95,9 +94,104 @@ struct ReviewSessionTests {
 
     @Test func acceptingMarksOverlappingSuggestionStale() {
         var s = session([raw("cat sat"), raw("sat on")])
-        let edit = s.accept(s.suggestions[0].id, in: text)!
-        s.applyEdit(edit)
+        _ = s.accept(s.suggestions[0].id, in: text)!
         #expect(s.suggestions[1].status == .stale)
+    }
+
+    // MARK: Reversing decisions
+
+    func applied(_ edit: TextEdit, to text: String) -> String {
+        (text as NSString).replacingCharacters(in: edit.range, with: edit.replacement)
+    }
+
+    @Test func acceptedSuggestionRemembersWhereItsReplacementIs() {
+        var s = session([raw("happy", replacement: "very glad")])
+        _ = s.accept(s.suggestions[0].id, in: text)
+        #expect(s.suggestions[0].range == NSRange(location: 31, length: 9))
+        #expect(s.highlights.isEmpty)
+    }
+
+    @Test func revertingAnAcceptedSuggestionRestoresTheOriginal() throws {
+        var s = session([raw("Teh", prefix: "", replacement: "The"), raw("happy")])
+        let acceptEdit = s.accept(s.suggestions[0].id, in: text)
+        let accepted = applied(try #require(acceptEdit), to: text)
+        #expect(s.canRestore(s.suggestions[0].id, in: accepted))
+        let revertEdit = s.revert(s.suggestions[0].id, in: accepted)
+        let revert = try #require(revertEdit)
+        #expect(revert == TextEdit(range: NSRange(location: 0, length: 3), replacement: "Teh"))
+        #expect(applied(revert, to: accepted) == text)
+        #expect(s.suggestions[0].status == .open)
+        #expect(s.suggestions[0].range == NSRange(location: 0, length: 3))
+        #expect(s.suggestions[1].range == NSRange(location: 31, length: 5))
+    }
+
+    @Test func revertShiftsLaterSuggestions() throws {
+        var s = session([raw("Teh", prefix: "", replacement: "The very"), raw("happy")])
+        let acceptEdit = s.accept(s.suggestions[0].id, in: text)
+        let accepted = applied(try #require(acceptEdit), to: text)
+        let revertEdit = s.revert(s.suggestions[0].id, in: accepted)
+        #expect(revertEdit != nil)
+        #expect(s.suggestions[1].range == NSRange(location: 31, length: 5))
+    }
+
+    @Test func acceptedRangeFollowsLaterEdits() throws {
+        var s = session([raw("happy", replacement: "glad")])
+        let acceptEdit = s.accept(s.suggestions[0].id, in: text)
+        var current = applied(try #require(acceptEdit), to: text)
+        let insert = TextEdit(range: NSRange(location: 0, length: 0), replacement: "Oh. ")
+        s.applyEdit(insert)
+        current = applied(insert, to: current)
+        let revertEdit = s.revert(s.suggestions[0].id, in: current)
+        let revert = try #require(revertEdit)
+        #expect(applied(revert, to: current) == "Oh. " + text)
+    }
+
+    @Test func revertIsImpossibleAfterTheReplacementWasEdited() throws {
+        var s = session([raw("happy", replacement: "glad")])
+        let acceptEdit = s.accept(s.suggestions[0].id, in: text)
+        var current = applied(try #require(acceptEdit), to: text)
+        let edit = TextEdit(range: NSRange(location: 32, length: 1), replacement: "L")
+        s.applyEdit(edit)
+        current = applied(edit, to: current)
+        #expect(!s.canRestore(s.suggestions[0].id, in: current))
+        let revertResult = s.revert(s.suggestions[0].id, in: current)
+        #expect(revertResult == nil)
+        #expect(s.suggestions[0].status == .accepted)
+    }
+
+    @Test func reopeningADismissedSuggestion() {
+        var s = session([raw("happy")])
+        s.dismiss(s.suggestions[0].id)
+        #expect(s.canRestore(s.suggestions[0].id, in: text))
+        let reopenResult = s.reopen(s.suggestions[0].id, in: text)
+        #expect(reopenResult)
+        #expect(s.suggestions[0].status == .open)
+        #expect(s.highlights.map(\.original) == ["happy"])
+    }
+
+    @Test func dismissedRangeFollowsEdits() {
+        var s = session([raw("happy")])
+        s.dismiss(s.suggestions[0].id)
+        s.applyEdit(TextEdit(range: NSRange(location: 0, length: 0), replacement: "Oh. "))
+        let reopenResult = s.reopen(s.suggestions[0].id, in: "Oh. " + text)
+        #expect(reopenResult)
+        #expect(s.suggestions[0].range == NSRange(location: 35, length: 5))
+    }
+
+    @Test func reopenIsImpossibleAfterTheTextChanged() {
+        var s = session([raw("happy")])
+        s.dismiss(s.suggestions[0].id)
+        s.applyEdit(TextEdit(range: NSRange(location: 32, length: 1), replacement: "A"))
+        let changed = "Teh cat sat on teh mat. It was hAppy."
+        let reopenResult = s.reopen(s.suggestions[0].id, in: changed)
+        #expect(!reopenResult)
+        #expect(s.suggestions[0].status == .dismissed)
+    }
+
+    @Test func dismissedUnlocatedSuggestionCannotBeReopened() {
+        var s = session([raw("missing")])
+        s.dismiss(s.suggestions[0].id)
+        #expect(!s.canRestore(s.suggestions[0].id, in: text))
     }
 
     @Test func dismissRemovesFromOpen() {
@@ -106,6 +200,7 @@ struct ReviewSessionTests {
         #expect(s.suggestions[0].status == .dismissed)
         #expect(s.openSuggestions.isEmpty)
         #expect(s.highlights.isEmpty)
+        #expect(s.suggestion(at: 32) == nil)
     }
 
     @Test func highlightsListOpenResolvedSuggestions() {

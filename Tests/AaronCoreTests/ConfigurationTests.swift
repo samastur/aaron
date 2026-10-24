@@ -50,7 +50,7 @@ struct ConfigurationTests {
         """#
         let config = try JSONDecoder().decode(Configuration.self, from: Data(json.utf8))
         #expect(config.editor.monospaced)
-        #expect(config.editor.fontSize == 15)
+        #expect(config.editor.fontSize == 16)
         #expect(config.aiActions.count == 1)
         #expect(!config.aiActions[0].id.isEmpty)
         #expect(config.aiProviders == Configuration.default.aiProviders)
@@ -95,6 +95,19 @@ struct DefaultRendererSelectionTests {
         var config = Configuration.default
         config.defaultRenderer.pelican = "deleted"
         #expect(config.defaultRendererID(isPelican: true) == PreviewRendererConfig.builtinID)
+    }
+
+    @Test func defaultEditorFontSizeIs16() {
+        #expect(EditorSettings().fontSize == 16)
+    }
+
+    @Test func helpSettingsDefaultToEmptyAndDecode() throws {
+        #expect(Configuration.default.pelican.pluginsCommand == "")
+        #expect(Configuration.default.pelican.helpDirectory == nil)
+        let json = #"{"pelican": {"pluginsCommand": "list", "helpDirectory": "~/help"}}"#
+        let config = try JSONDecoder().decode(Configuration.self, from: Data(json.utf8))
+        #expect(config.pelican.pluginsCommand == "list")
+        #expect(config.pelican.helpDirectory == "~/help")
     }
 
     @Test func newPostTemplateHasDefault() {

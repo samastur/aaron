@@ -79,11 +79,8 @@ enum DebugHarness {
                 let data = try Data(contentsOf: URL(fileURLWithPath: scriptPath))
                 let steps = try JSONDecoder().decode([Step].self, from: data)
                 try await Task.sleep(for: .seconds(1))
-                // Menu commands target the key window, so make ours key.
-                NSApp.activate()
-                model.editor.textView?.window?.makeKeyAndOrderFront(nil)
-                model.editor.focus()
-                try await Task.sleep(for: .milliseconds(300))
+                // The app is deliberately not activated: it would take keyboard
+                // focus from whatever the user is doing while tests run.
                 for (index, step) in steps.enumerated() {
                     progress("step \(index) start", output: output)
                     try await perform(step, model: model, output: output)
