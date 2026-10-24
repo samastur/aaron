@@ -10,6 +10,14 @@ public struct TextEdit: Equatable, Sendable {
         self.replacement = replacement
     }
 
+    /// The edit described by `NSTextStorage` after processing: `editedRange`
+    /// is the range of the new text, `changeInLength` the length difference.
+    public init(storageEditedRange editedRange: NSRange, changeInLength: Int, newText: String) {
+        let replacement = (newText as NSString).substring(with: editedRange)
+        self.init(range: NSRange(location: editedRange.location, length: editedRange.length - changeInLength),
+                  replacement: replacement)
+    }
+
     /// How much the document length changes when this edit is applied.
     public var delta: Int { (replacement as NSString).length - range.length }
 }

@@ -1,0 +1,305 @@
+import AaronAI
+import AaronCore
+import AaronPelican
+import AaronPreview
+import Foundation
+import Observation
+
+/// State and behaviour of one document window: preview, review mode and
+/// Pelican tags. The text itself lives in the document and the text view.
+@MainActor
+@Observable
+final class DocumentWindowModel {
+    let appModel: AppModel
+    let editor = EditorController()
+
+    private(set) var text = ""
+    private(set) var fileURL: URL?
+    private(set) var isPelican = false
+    private(set) var statistics = TextStatistics(words: 0, characters: 0)
+
+    // Preview
+    var showPreview = true {
+        didSet { if showPreview && !oldValue { refreshPreview() } }
+    }
+    var rendererID = PreviewRendererConfig.builtinID {
+        didSet { if rendererID != oldValue { refreshPreview() } }
+    }
+    private(set) var previewHTML: String?
+    private(set) var previewError: String?
+    private(set) var isRenderingPreview = false
+    private var rendererChosen = false
+
+    // Review
+    var showReview = false
+    private(set) var session = ReviewSession()
+    private(set) var selectedSuggestionID: UUID?
+    private(set) var runningActionName: String?
+    var aiError: String?
+    var showHandledSuggestions = false
+
+    // Pelican tags
+    private(set) var tags: [TagInfo] = []
+    private(set) var tagError: String?
+    private var tagsLoadedFor: String?
+
+    @ObservationIgnored private var previewTask: Task<Void, Never>?
+    @ObservationIgnored private var actionTask: Task<Void, Never>?
+    @ObservationIgnored private var tagTask: Task<Void, Never>?
+
+    init(appModel: AppModel) {
+        self.appModel = appModel
+    }
+
+    var configuration: Configuration { appModel.configuration }
+
+    var availableRenderers: [(id: String, name: String)] {
+        [(PreviewRendererConfig.builtinID, "Markdown (built-in)")]
+            + configuration.previewRenderers.map { ($0.id, $0.name) }
+    }
+
+    var isRunningAction: Bool { runningActionName != nil }
+
+    // MARK: - Document changes
+
+    func documentOpened(text: String, fileURL: URL?) {
+        self.fileURL = fileURL
+        textChanged(text)
+        if !rendererChosen {
+            rendererChosen = true
+            rendererID = configuration.defaultRendererID(isPelican: isPelican)
+        }
+        refreshPreview(immediately: true)
+    }
+
+    func fileURLChanged(_ url: URL?) {
+        guard url != fileURL else { return }
+        fileURL = url
+        tagsLoadedFor = nil
+        loadTagsIfNeeded()
+        refreshPreview()
+    }
+
+    func textChanged(_ newText: String) {
+        guard newText != text else { return }
+        text = newText
+        let wasPelican = isPelican
+        isPelican = PelicanDetector.isPelican(newText, detection: configuration.pelican.detection)
+        statistics = TextStatistics(text: newText)
+        if isPelican && !wasPelican { loadTagsIfNeeded() }
+        refreshPreview()
+    }
+
+    func configurationChanged() {
+        isPelican = PelicanDetector.isPelican(text, detection: configuration.pelican.detection)
+        if rendererID != PreviewRendererConfig.builtinID, configuration.renderer(withID: rendererID) == nil {
+            rendererID = PreviewRendererConfig.builtinID
+        }
+        tagsLoadedFor = nil
+        loadTagsIfNeeded()
+        refreshPreview()
+    }
+
+    /// Called for every change of the text storage, including undo and
+    /// accepted suggestions, so suggestion ranges stay correct.
+    func recordEdit(_ edit: TextEdit) {
+        session.applyEdit(edit)
+    }
+
+    // MARK: - Preview
+
+    func refreshPreview(immediately: Bool = false) {
+        guard showPreview else { return }
+        previewTask?.cancel()
+        let request = PreviewRequest(text: text, fileURL: fileURL)
+        let renderer = currentRenderer()
+        let delay: Duration = immediately ? .zero : (rendererID == PreviewRendererConfig.builtinID ? .milliseconds(250) : .milliseconds(800))
+        previewTask = Task { [weak self] in
+            if delay > .zero {
+                try? await Task.sleep(for: delay)
+            }
+            guard !Task.isCancelled else { return }
+            self?.isRenderingPreview = true
+            do {
+                let html = try await renderer.render(request)
+                guard !Task.isCancelled, let self else { return }
+                self.previewHTML = html
+                self.previewError = nil
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled, let self else { return }
+                self.previewError = error.localizedDescription
+            }
+            self?.isRenderingPreview = false
+        }
+    }
+
+    private func currentRenderer() -> any PreviewRenderer {
+        if let config = configuration.renderer(withID: rendererID) {
+            return ExternalCommandRenderer(config: config)
+        }
+        return BuiltinMarkdownRenderer()
+    }
+
+    var assetResolver: PreviewAssetResolver {
+        PreviewAssetResolver(mappings: configuration.renderer(withID: rendererID)?.assetMappings ?? [],
+                             documentDirectory: fileURL?.deletingLastPathComponent())
+    }
+
+    // MARK: - AI actions
+
+    func run(_ action: AIActionConfig) {
+        guard !isRunningAction else { return }
+        guard let provider = configuration.provider(for: action) else {
+            aiError = "The action “\(action.name)” uses an AI provider that no longer exists. Choose another one in Settings."
+            showReview = true
+            return
+        }
+        showReview = true
+        aiError = nil
+        runningActionName = action.name
+        editor.setEditable(false)
+
+        let document = editor.currentText
+        let selected = editor.selectedRange
+        let selection = selected.length > 0 ? (document as NSString).substring(with: selected) : nil
+        let request = AIActionRequest(
+            actionPrompt: action.prompt, providerCommand: provider.command,
+            timeout: .seconds(provider.timeoutSeconds), document: document, selection: selection,
+            workingDirectory: existingDocumentDirectory)
+
+        actionTask = Task { [weak self] in
+            do {
+                let raws = try await AIActionRunner().run(request)
+                guard let self else { return }
+                if self.editor.currentText == document {
+                    let before = Set(self.session.suggestions.map(\.id))
+                    self.session.add(raws, actionName: action.name, text: document)
+                    if raws.isEmpty {
+                        self.aiError = nil
+                    }
+                    if let first = self.session.highlights.first(where: { !before.contains($0.id) }) {
+                        self.select(first.id)
+                    }
+                } else {
+                    self.aiError = "The document changed while “\(action.name)” was running, so its results were discarded. Run it again."
+                }
+            } catch is CancellationError {
+                // Cancelled by the user.
+            } catch {
+                self?.aiError = "“\(action.name)” failed. \(error.localizedDescription)"
+            }
+            self?.finishAction()
+        }
+    }
+
+    func cancelAction() {
+        actionTask?.cancel()
+        finishAction()
+    }
+
+    private func finishAction() {
+        runningActionName = nil
+        actionTask = nil
+        editor.setEditable(true)
+    }
+
+    private var existingDocumentDirectory: URL? {
+        guard let dir = fileURL?.deletingLastPathComponent(),
+              FileManager.default.fileExists(atPath: dir.path) else { return nil }
+        return dir
+    }
+
+    // MARK: - Suggestions
+
+    var selectedSuggestion: Suggestion? {
+        selectedSuggestionID.flatMap { session.suggestion(withID: $0) }
+    }
+
+    var visibleSuggestions: [Suggestion] {
+        let order: (Suggestion) -> Int = { $0.range?.location ?? Int.max }
+        let active = session.suggestions.filter { [.open, .stale, .notFound, .ambiguous].contains($0.status) }
+            .sorted { order($0) < order($1) }
+        guard showHandledSuggestions else { return active }
+        return active + session.suggestions.filter { $0.status == .accepted || $0.status == .dismissed }
+    }
+
+    func select(_ id: UUID?, reveal: Bool = true) {
+        selectedSuggestionID = id
+        if reveal, let range = selectedSuggestion?.range {
+            editor.reveal(range)
+        }
+    }
+
+    func accept(_ id: UUID) {
+        guard !isRunningAction else { return }
+        let next = session.nextOpen(after: id)
+        if let edit = session.accept(id, in: editor.currentText) {
+            editor.apply(edit, undoName: "Accept Suggestion")
+            select(next?.id == id ? nil : next?.id)
+        }
+    }
+
+    func dismiss(_ id: UUID) {
+        let next = session.nextOpen(after: id)
+        session.dismiss(id)
+        select(next?.id == id ? nil : next?.id)
+    }
+
+    func acceptSelected() { selectedSuggestionID.map(accept) }
+    func dismissSelected() { selectedSuggestionID.map(dismiss) }
+
+    func selectNext() {
+        select(session.nextOpen(after: selectedSuggestionID)?.id)
+    }
+
+    func selectPrevious() {
+        let ordered = session.highlights
+        guard !ordered.isEmpty else { return }
+        let current = ordered.firstIndex { $0.id == selectedSuggestionID } ?? 0
+        select(ordered[(current - 1 + ordered.count) % ordered.count].id)
+    }
+
+    func clearSuggestions() {
+        session.clear()
+        selectedSuggestionID = nil
+        aiError = nil
+    }
+
+    /// Clicking into highlighted text selects its suggestion.
+    func caretMoved(to location: Int) {
+        guard showReview, let suggestion = session.suggestion(at: location) else { return }
+        if suggestion.id != selectedSuggestionID {
+            select(suggestion.id, reveal: false)
+        }
+    }
+
+    // MARK: - Tags
+
+    func loadTagsIfNeeded(refresh: Bool = false) {
+        let pelican = configuration.pelican
+        guard isPelican, !pelican.tagsCommand.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let context = CommandContext(fileURL: fileURL, baseDirectory: nil, temporaryFileURL: nil)
+        let command = CommandTemplate.expand(pelican.tagsCommand, context: context)
+        let directory = PathExpansion.url(pelican.tagsWorkingDirectory) ?? existingDocumentDirectory
+        let key = command + "|" + (directory?.path ?? "")
+        guard refresh || tagsLoadedFor != key else { return }
+        tagsLoadedFor = key
+        let provider = appModel.tagProvider
+        tagTask?.cancel()
+        tagTask = Task { [weak self] in
+            do {
+                let tags = try await provider.tags(command: command, workingDirectory: directory,
+                                                   timeout: .seconds(pelican.tagsTimeoutSeconds), refresh: refresh)
+                self?.tags = tags
+                self?.tagError = nil
+            } catch is CancellationError {
+                return
+            } catch {
+                self?.tagError = error.localizedDescription
+                self?.tagsLoadedFor = nil
+            }
+        }
+    }
+}

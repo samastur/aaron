@@ -80,3 +80,25 @@ struct ConfigurationTests {
         #expect(config.renderer(withID: "missing") == nil)
     }
 }
+
+struct DefaultRendererSelectionTests {
+    @Test func picksRendererByDocumentKind() {
+        var config = Configuration.default
+        let pelican = PreviewRendererConfig(id: "pel", name: "Pelican", command: "x")
+        config.previewRenderers = [pelican]
+        config.defaultRenderer.pelican = "pel"
+        #expect(config.defaultRendererID(isPelican: true) == "pel")
+        #expect(config.defaultRendererID(isPelican: false) == PreviewRendererConfig.builtinID)
+    }
+
+    @Test func unknownRendererFallsBackToBuiltin() {
+        var config = Configuration.default
+        config.defaultRenderer.pelican = "deleted"
+        #expect(config.defaultRendererID(isPelican: true) == PreviewRendererConfig.builtinID)
+    }
+
+    @Test func newPostTemplateHasDefault() {
+        #expect(Configuration.default.pelican.newPostTemplate.contains("Title: "))
+        #expect(Configuration.default.pelican.newPostTemplate.contains("{date}"))
+    }
+}

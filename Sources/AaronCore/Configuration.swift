@@ -22,6 +22,13 @@ public struct Configuration: Codable, Equatable, Sendable {
         previewRenderers.first { $0.id == id }
     }
 
+    /// The renderer a new window starts with; the built-in one when the
+    /// configured renderer no longer exists.
+    public func defaultRendererID(isPelican: Bool) -> String {
+        let id = isPelican ? defaultRenderer.pelican : defaultRenderer.markdown
+        return renderer(withID: id) == nil ? PreviewRendererConfig.builtinID : id
+    }
+
     enum CodingKeys: String, CodingKey {
         case editor, previewRenderers, defaultRenderer, aiProviders, aiActions, pelican
     }
@@ -223,6 +230,10 @@ public struct PelicanSettings: Codable, Equatable, Sendable {
     public var tagsCommand = ""
     public var tagsWorkingDirectory: String?
     public var tagsTimeoutSeconds: Double = 15
+    /// Text of File ▸ New Pelican Post; `{date}` and `{day}` are filled in.
+    public var newPostTemplate = PelicanSettings.defaultTemplate
+
+    public static let defaultTemplate = "Title: \nDate: {date}\nCategory: \nTags: \nSlug: \nStatus: draft\n\n"
 
     public init() {}
 
@@ -232,9 +243,12 @@ public struct PelicanSettings: Codable, Equatable, Sendable {
         tagsCommand = try c.decodeIfPresent(String.self, forKey: .tagsCommand) ?? tagsCommand
         tagsWorkingDirectory = try c.decodeIfPresent(String.self, forKey: .tagsWorkingDirectory)
         tagsTimeoutSeconds = try c.decodeIfPresent(Double.self, forKey: .tagsTimeoutSeconds) ?? tagsTimeoutSeconds
+        newPostTemplate = try c.decodeIfPresent(String.self, forKey: .newPostTemplate) ?? newPostTemplate
     }
 
-    enum CodingKeys: String, CodingKey { case detection, tagsCommand, tagsWorkingDirectory, tagsTimeoutSeconds }
+    enum CodingKeys: String, CodingKey {
+        case detection, tagsCommand, tagsWorkingDirectory, tagsTimeoutSeconds, newPostTemplate
+    }
 }
 
 /// `~` expansion for paths typed into settings.
