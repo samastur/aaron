@@ -101,9 +101,11 @@ Notes:
 - When the screen is locked, windows are occluded and AppKit animations
   don't run; the harness therefore toggles the review panel without
   animation. Nothing else depends on the screen being unlocked.
-- Menu commands act on the key window. When the app can't become active
-  (screen locked, or launched in the background), scenarios using `menu`
-  report `SKIP` instead of failing.
+- Menu commands act on the focused window, which SwiftUI does not
+  recognise in harness runs, even when the window is key. The `menu` step
+  therefore only works for commands that don't need a window (such as File ▸
+  New Pelican Post), and scenarios using it report `SKIP` when the app is not
+  active. Window commands are covered by the UI tests.
 - The completion popup runs a modal event loop, which would block the
   script; that's why typing suppresses it.
 

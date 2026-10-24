@@ -1,3 +1,3 @@
 # Story
 
-The cat saw teh quick fox. It jumped over the dog.
+The cat saw the quick fox. It jumped over the dog.
