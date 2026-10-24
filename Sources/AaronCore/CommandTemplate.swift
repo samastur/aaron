@@ -21,14 +21,21 @@ public enum CommandTemplate {
     public static let placeholders = ["file", "dir", "filename", "stem", "relpath", "tmpfile"]
     public static let untitledName = "untitled.md"
 
+    private static let placeholderPattern = try! NSRegularExpression(
+        pattern: "\\{(" + placeholders.joined(separator: "|") + ")\\}")
+
+    /// Replaces placeholders in one pass, so substituted values are never
+    /// expanded again.
     public static func expand(_ template: String, context: CommandContext) -> String {
-        var result = template
-        for name in placeholders {
-            let token = "{\(name)}"
-            guard result.contains(token) else { continue }
-            result = result.replacingOccurrences(of: token, with: shellQuote(value(of: name, context: context)))
+        let ns = template as NSString
+        var result = ""
+        var last = 0
+        for match in placeholderPattern.matches(in: template, range: NSRange(location: 0, length: ns.length)) {
+            result += ns.substring(with: NSRange(location: last, length: match.range.location - last))
+            result += shellQuote(value(of: ns.substring(with: match.range(at: 1)), context: context))
+            last = NSMaxRange(match.range)
         }
-        return result
+        return result + ns.substring(from: last)
     }
 
     public static func uses(_ placeholder: String, in template: String) -> Bool {

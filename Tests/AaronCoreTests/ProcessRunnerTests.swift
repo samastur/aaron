@@ -70,6 +70,60 @@ struct ProcessRunnerTests {
         }
     }
 
+    @Test func missingWorkingDirectoryFailsToLaunch() async throws {
+        await #expect(throws: ProcessError.self) {
+            try await runner.run("true", workingDirectory: URL(fileURLWithPath: "/no/such/dir-\(UUID())"),
+                                 timeout: .seconds(5))
+        }
+    }
+
+    func isRunning(_ pattern: String) async throws -> Bool {
+        // "[s]leep" keeps pgrep from matching the shell that runs it.
+        let check = try? await runner.run("pgrep -f '[\(pattern.prefix(1))]\(pattern.dropFirst())'", timeout: .seconds(5))
+        return check != nil
+    }
+
+    @Test func timeoutStopsChildProcessesToo() async throws {
+        let marker = "31.\(Int.random(in: 100...999))"
+        let start = Date()
+        await #expect(throws: ProcessError.timedOut) {
+            try await runner.run("sleep \(marker) | cat", timeout: .milliseconds(300))
+        }
+        #expect(Date().timeIntervalSince(start) < 4)
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(try await !isRunning("sleep \(marker)"))
+    }
+
+    @Test func cancellationStopsChildProcessesToo() async throws {
+        let marker = "32.\(Int.random(in: 100...999))"
+        let task = Task { try await runner.run("sleep \(marker); echo never", timeout: .seconds(20)) }
+        try await Task.sleep(for: .milliseconds(300))
+        task.cancel()
+        _ = try? await task.value
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(try await !isRunning("sleep \(marker)"))
+    }
+
+    @Test func backgroundGrandchildDoesNotHoldUpTheResult() async throws {
+        let marker = "33.\(Int.random(in: 100...999))"
+        let start = Date()
+        let result = try await runner.run("(sleep \(marker) &); echo done", timeout: .seconds(20))
+        #expect(result.stdout == "done\n")
+        #expect(Date().timeIntervalSince(start) < 5)
+        _ = try? await runner.run("pkill -f '[s]leep \(marker)'", timeout: .seconds(5))
+    }
+
+    @Test func commandThatIgnoresInputDoesNotCrashOnLargeInput() async throws {
+        let big = String(repeating: "x", count: 2_000_000)
+        let result = try await runner.run("exit 0", input: big, timeout: .seconds(10))
+        #expect(result.exitCode == 0)
+    }
+
+    @Test func nonPositiveTimeoutIsTreatedAsOneSecond() async throws {
+        let result = try await runner.run("echo ok", timeout: .zero)
+        #expect(result.stdout == "ok\n")
+    }
+
     @Test func loginShellRuns() async throws {
         let result = try await ProcessRunner().run("echo ok", timeout: .seconds(20))
         #expect(result.stdout.hasSuffix("ok\n"))

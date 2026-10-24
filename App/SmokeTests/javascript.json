@@ -1,0 +1,6 @@
+[
+ {"wait": 1.5, "waitIdle": true, "expect": {"previewTextContains": "script did not run", "previewTextLacks": "SCRIPT RAN"}},
+ {"renderer": "external", "waitIdle": true, "wait": 0.5, "expect": {"previewTextContains": "External renderer", "previewTextLacks": "SCRIPT RAN"}},
+ {"renderer": "external-js", "waitIdle": true, "wait": 0.5, "expect": {"previewTextContains": "SCRIPT RAN"}},
+ {"quit": true}
+]

@@ -45,6 +45,18 @@ struct PreviewAssetResolverTests {
         #expect(r.fileURL(forPath: "/articles/theme/site.css") != nil)
     }
 
+    @Test func blankMappingDirectoryIsIgnored() throws {
+        // A blank folder must not mean "the current directory".
+        let name = "aaron-cwd-probe-\(UUID().uuidString)"
+        let probe = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(name)
+        try Data("x".utf8).write(to: probe)
+        defer { try? FileManager.default.removeItem(at: probe) }
+        for blank in ["", "  "] {
+            let r = PreviewAssetResolver(mappings: [AssetMapping(urlPrefix: "/", directory: blank)], documentDirectory: nil)
+            #expect(r.fileURL(forPath: "/\(name)") == nil)
+        }
+    }
+
     @Test func mimeTypes() {
         #expect(PreviewAssetResolver.mimeType(for: URL(fileURLWithPath: "/a.css")) == "text/css")
         #expect(PreviewAssetResolver.mimeType(for: URL(fileURLWithPath: "/a.png")) == "image/png")

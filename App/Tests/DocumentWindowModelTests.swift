@@ -21,6 +21,23 @@ final class DocumentWindowModelTests: XCTestCase {
                        "“Style” made 3 suggestions, 2 of them could not be located in the text.")
     }
 
+    func testCancelThenRunAgainKeepsTheNewActionRunning() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
+        let app = AppModel(configurationURL: directory.appendingPathComponent("config.json"))
+        app.configuration.aiProviders = [AIProviderConfig(id: "slow", name: "Slow",
+                                                          command: "cat >/dev/null; sleep 5; echo '{\"suggestions\": []}'")]
+        app.configuration.aiActions = [AIActionConfig(id: "a", name: "A", prompt: "p", providerID: "slow")]
+        let model = DocumentWindowModel(appModel: app)
+        model.documentOpened(text: "Text", fileURL: nil)
+        model.run(app.configuration.aiActions[0])
+        try await Task.sleep(for: .milliseconds(200))
+        model.cancelAction()
+        model.run(app.configuration.aiActions[0])
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertTrue(model.isRunningAction, "the second run must still be running")
+        model.cancelAction()
+    }
+
     func testConfigurationChangeUnrelatedToWindowDoesNotRerunTags() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
         let app = AppModel(configurationURL: directory.appendingPathComponent("config.json"))

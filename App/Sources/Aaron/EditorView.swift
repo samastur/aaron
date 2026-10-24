@@ -116,8 +116,14 @@ struct EditorView: NSViewRepresentable {
         }
         if textView.string != text {
             // The document changed outside the editor, e.g. File ▸ Revert.
-            textView.string = text
-            coordinator.applySyntaxHighlighting()
+            // Deferred: replacing the text updates the model, which must not
+            // happen during a view update.
+            DispatchQueue.main.async {
+                guard textView.string != coordinator.text.wrappedValue else { return }
+                textView.string = coordinator.text.wrappedValue
+                coordinator.applySyntaxHighlighting()
+                coordinator.model.textChanged(textView.string)
+            }
         }
         textView.isEditable = !model.isRunningAction
         coordinator.applySuggestionHighlights(model.session.highlights, selected: model.selectedSuggestionID)
@@ -212,7 +218,7 @@ struct EditorStyles {
     let monoFont: NSFont
 
     init(settings: EditorSettings) {
-        let size = CGFloat(settings.fontSize)
+        let size = CGFloat(settings.effectiveFontSize)
         font = settings.monospaced ? .monospacedSystemFont(ofSize: size, weight: .regular) : .systemFont(ofSize: size)
         monoFont = .monospacedSystemFont(ofSize: size * 0.92, weight: .regular)
         let paragraph = NSMutableParagraphStyle()

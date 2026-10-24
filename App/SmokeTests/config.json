@@ -11,7 +11,8 @@
   ],
   "previewRenderers": [
     {"id": "external", "name": "Fake External", "command": "/bin/sh '$FIXTURES/fake-preview.sh'"},
-    {"id": "broken", "name": "Broken", "command": "/bin/sh '$FIXTURES/failing-preview.sh'"}
+    {"id": "broken", "name": "Broken", "command": "/bin/sh '$FIXTURES/failing-preview.sh'"},
+    {"id": "external-js", "name": "External with JavaScript", "command": "/bin/sh '$FIXTURES/fake-preview.sh'", "allowsJavaScript": true}
   ],
   "defaultRenderer": {"pelican": "external"},
   "pelican": {"tagsCommand": "/bin/sh '$FIXTURES/fake-tags.sh'"}

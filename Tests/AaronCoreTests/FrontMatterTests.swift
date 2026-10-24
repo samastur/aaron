@@ -51,6 +51,11 @@ struct FrontMatterTests {
         #expect(FrontMatter.parse("\nTitle: late") == nil)
     }
 
+    @Test func fieldLinesFollowedByProseAreNotMetadata() {
+        #expect(FrontMatter.parse("Note: this draft is rough\nand continues here.") == nil)
+        #expect(FrontMatter.parse("Title: X\nProse right after.") == nil)
+    }
+
     @Test func linkLikeFirstLineIsNotMetadata() {
         #expect(FrontMatter.parse("http://example.com is great\n") == nil)
     }

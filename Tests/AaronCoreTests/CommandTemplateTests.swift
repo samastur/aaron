@@ -44,6 +44,12 @@ struct CommandTemplateTests {
         #expect(CommandTemplate.expand("echo {nope} ${HOME}", context: context) == "echo {nope} ${HOME}")
     }
 
+    @Test func substitutedValuesAreNotExpandedAgain() {
+        let ctx = CommandContext(fileURL: URL(fileURLWithPath: "/b/{tmpfile}.md"), baseDirectory: nil,
+                                 temporaryFileURL: URL(fileURLWithPath: "/tmp/t.md"))
+        #expect(CommandTemplate.expand("{file} {tmpfile}", context: ctx) == "'/b/{tmpfile}.md' /tmp/t.md")
+    }
+
     @Test func quotesSingleQuotes() {
         #expect(CommandTemplate.shellQuote("it's") == #"'it'\''s'"#)
         #expect(CommandTemplate.shellQuote("plain-path/x.md") == "plain-path/x.md")

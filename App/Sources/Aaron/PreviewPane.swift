@@ -35,7 +35,8 @@ struct PreviewPane: View {
             .padding(.vertical, 6)
             Divider()
             ZStack(alignment: .top) {
-                PreviewWebView(html: model.previewHTML ?? "", resolver: model.assetResolver)
+                PreviewWebView(html: model.previewHTML ?? "", resolver: model.assetResolver,
+                               allowsJavaScript: model.previewAllowsJavaScript)
                     .accessibilityIdentifier("preview")
                 if let error = model.previewError {
                     PreviewErrorBanner(message: error)
@@ -78,6 +79,7 @@ struct PreviewWebView: NSViewRepresentable {
 
     let html: String
     let resolver: PreviewAssetResolver
+    let allowsJavaScript: Bool
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -97,6 +99,12 @@ struct PreviewWebView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {
         let coordinator = context.coordinator
         coordinator.schemeHandler.resolver = resolver
+        if coordinator.allowsJavaScript != allowsJavaScript {
+            coordinator.allowsJavaScript = allowsJavaScript
+            coordinator.schemeHandler.html = html
+            coordinator.reload()
+            return
+        }
         guard coordinator.schemeHandler.html != html else { return }
         coordinator.schemeHandler.html = html
         coordinator.reload()
@@ -106,6 +114,7 @@ struct PreviewWebView: NSViewRepresentable {
     final class Coordinator: NSObject, WKNavigationDelegate {
         let schemeHandler = PreviewSchemeHandler()
         weak var webView: WKWebView?
+        var allowsJavaScript = false
         private var savedScroll: (x: Double, y: Double)?
         private var generation = 0
 
@@ -113,9 +122,12 @@ struct PreviewWebView: NSViewRepresentable {
             guard let webView else { return }
             generation += 1
             let url = URL(string: "\(PreviewWebView.scheme)://preview\(PreviewWebView.pagePath)?v=\(generation)")!
+            // While a page is still loading its position isn't meaningful;
+            // keep the one saved before.
+            let pageIsLoading = webView.isLoading
             webView.evaluateJavaScript("[window.scrollX, window.scrollY]") { [weak self] result, _ in
                 MainActor.assumeIsolated {
-                    if let values = result as? [Double], values.count == 2 {
+                    if !pageIsLoading, let values = result as? [Double], values.count == 2 {
                         self?.savedScroll = (values[0], values[1])
                     }
                     webView.load(URLRequest(url: url))
@@ -129,21 +141,24 @@ struct PreviewWebView: NSViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
-                     decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
-            guard let url = action.request.url else { return decisionHandler(.cancel) }
+                     preferences: WKWebpagePreferences,
+                     decisionHandler: @escaping @MainActor (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
+            // Scripts in the page itself; our own evaluateJavaScript calls still work.
+            preferences.allowsContentJavaScript = allowsJavaScript
+            guard let url = action.request.url else { return decisionHandler(.cancel, preferences) }
             if url.scheme == PreviewWebView.scheme {
                 // Only our own page loads in the preview; in-page anchors are fine.
                 let isPage = url.path == PreviewWebView.pagePath
                 if action.navigationType == .linkActivated && !isPage {
-                    return decisionHandler(.cancel)
+                    return decisionHandler(.cancel, preferences)
                 }
-                return decisionHandler(.allow)
+                return decisionHandler(.allow, preferences)
             }
             if action.navigationType == .linkActivated, ["http", "https", "mailto"].contains(url.scheme ?? "") {
                 NSWorkspace.shared.open(url)
             }
-            // Subresources (fonts, scripts) from the web are allowed; navigations are not.
-            decisionHandler(action.targetFrame?.isMainFrame == false ? .allow : .cancel)
+            // Embedded frames from the web are allowed; navigating the page is not.
+            decisionHandler(action.targetFrame?.isMainFrame == false ? .allow : .cancel, preferences)
         }
     }
 }

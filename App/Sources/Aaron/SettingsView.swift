@@ -27,7 +27,7 @@ private struct GeneralSettings: View {
                     HStack {
                         TextField("", value: $appModel.configuration.editor.fontSize, format: .number)
                             .frame(width: 60)
-                        Stepper("", value: $appModel.configuration.editor.fontSize, in: 9...36, step: 1)
+                        Stepper("", value: $appModel.configuration.editor.fontSize, in: EditorSettings.fontSizeRange, step: 1)
                             .labelsHidden()
                     }
                 }
@@ -105,6 +105,9 @@ private struct RendererDetail: View {
             TextField("Working directory", text: optional($renderer.workingDirectory), prompt: Text("document's folder"))
             TextField("{relpath} relative to", text: optional($renderer.baseDirectory), prompt: Text("e.g. ~/blog/content"))
             TextField("Timeout (seconds)", value: $renderer.timeoutSeconds, format: .number)
+            Toggle("Allow JavaScript in the preview", isOn: $renderer.allowsJavaScript)
+            Text("Only for renderers whose pages need scripts. Scripts in a document could read files the preview can reach.")
+                .font(.caption).foregroundStyle(.secondary)
             Section("Asset folders") {
                 Text("Serve URLs starting with a prefix (e.g. /articles/) from a local folder, so theme styles and images load.")
                     .font(.caption).foregroundStyle(.secondary)

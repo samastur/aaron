@@ -102,3 +102,22 @@ struct DefaultRendererSelectionTests {
         #expect(Configuration.default.pelican.newPostTemplate.contains("{date}"))
     }
 }
+
+struct ValidationTests {
+    @Test func fontSizeIsClampedToSupportedRange() {
+        var editor = EditorSettings()
+        editor.fontSize = 0
+        #expect(editor.effectiveFontSize == 9)
+        editor.fontSize = 500
+        #expect(editor.effectiveFontSize == 36)
+        editor.fontSize = 17
+        #expect(editor.effectiveFontSize == 17)
+    }
+
+    @Test func renderersDisallowJavaScriptByDefault() throws {
+        let json = #"{"previewRenderers": [{"name": "R", "command": "x"}]}"#
+        let config = try JSONDecoder().decode(Configuration.self, from: Data(json.utf8))
+        #expect(config.previewRenderers[0].allowsJavaScript == false)
+        #expect(PreviewRendererConfig(name: "R", command: "x").allowsJavaScript == false)
+    }
+}

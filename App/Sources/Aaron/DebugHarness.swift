@@ -50,6 +50,8 @@ enum DebugHarness {
         var selectedSuggestion: String?
         var showReview: Bool?
         var words: Int?
+        var previewTextContains: String?
+        var previewTextLacks: String?
     }
 
     private static var failures: [String] = []
@@ -129,7 +131,12 @@ enum DebugHarness {
             }
         }
         if let expectation = step.expect {
-            check(expectation, model: model)
+            var previewText = ""
+            if expectation.previewTextContains != nil || expectation.previewTextLacks != nil,
+               let webView = previewWebView {
+                previewText = (try? await webView.evaluateJavaScript("document.body.innerText") as? String) ?? ""
+            }
+            check(expectation, model: model, previewText: previewText)
         }
         if let name = step.snapshot {
             try await Task.sleep(for: .milliseconds(300))
@@ -142,7 +149,7 @@ enum DebugHarness {
         }
     }
 
-    private static func check(_ e: Expectation, model: DocumentWindowModel) {
+    private static func check(_ e: Expectation, model: DocumentWindowModel, previewText: String) {
         let text = model.editor.currentText
         func expect(_ ok: Bool, _ message: @autoclosure () -> String) {
             if !ok { failures.append(message()) }
@@ -183,6 +190,12 @@ enum DebugHarness {
                    "selected suggestion is \(model.selectedSuggestion?.original ?? "nil")")
         }
         if let value = e.showReview { expect(model.showReview == value, "showReview is \(model.showReview)") }
+        if let value = e.previewTextContains {
+            expect(previewText.contains(value), "preview text lacks \(value.debugDescription): \(previewText.prefix(200))")
+        }
+        if let value = e.previewTextLacks {
+            expect(!previewText.contains(value), "preview text contains \(value.debugDescription)")
+        }
         if let value = e.words { expect(model.statistics.words == value, "word count is \(model.statistics.words)") }
     }
 

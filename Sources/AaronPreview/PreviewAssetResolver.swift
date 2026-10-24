@@ -22,6 +22,8 @@ public struct PreviewAssetResolver: Sendable {
         let normalized = "/" + components.joined(separator: "/")
 
         for mapping in mappings {
+            // A blank folder would otherwise mean the current directory.
+            guard !mapping.directory.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
             let trimmed = mapping.urlPrefix.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let prefix = trimmed.isEmpty ? "/" : "/" + trimmed + "/"
             guard normalized.hasPrefix(prefix) || normalized + "/" == prefix else { continue }

@@ -22,6 +22,7 @@ final class AppModel {
     private var fileIsUnreadable = false
 
     @ObservationIgnored private var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 
     init(configurationURL: URL = ConfigurationStore.defaultURL()) {
         self.configurationURL = configurationURL
@@ -33,6 +34,18 @@ final class AppModel {
             configurationError = "Could not read \(configurationURL.path): \(error.localizedDescription). "
                 + "Using default settings; they will not be saved until the file is fixed or reloaded."
         }
+        // Don't lose edits made just before quitting to the save delay.
+        terminationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in
+            MainActor.assumeIsolated { self?.saveIfPending() }
+        }
+    }
+
+    func saveIfPending() {
+        guard let task = saveTask else { return }
+        task.cancel()
+        saveTask = nil
+        saveNow()
     }
 
     func reloadConfiguration() {
@@ -62,6 +75,7 @@ final class AppModel {
         saveTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
+            self?.saveTask = nil
             self?.saveNow()
         }
     }

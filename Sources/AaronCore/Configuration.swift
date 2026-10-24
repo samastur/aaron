@@ -78,6 +78,13 @@ public struct EditorSettings: Codable, Equatable, Sendable {
     public var fontSize: Double = 15
     public var monospaced = false
 
+    public static let fontSizeRange: ClosedRange<Double> = 9...36
+
+    /// The font size limited to the supported range.
+    public var effectiveFontSize: Double {
+        min(max(fontSize, Self.fontSizeRange.lowerBound), Self.fontSizeRange.upperBound)
+    }
+
     public init() {}
 
     public init(from decoder: Decoder) throws {
@@ -126,10 +133,14 @@ public struct PreviewRendererConfig: Codable, Equatable, Sendable, Identifiable 
     public var baseDirectory: String?
     public var timeoutSeconds: Double
     public var assetMappings: [AssetMapping]
+    /// Whether scripts in the rendered page may run. Off by default: a
+    /// document's raw HTML could otherwise read local files via the preview.
+    public var allowsJavaScript: Bool
 
     public init(id: String = UUID().uuidString, name: String, command: String,
                 workingDirectory: String? = nil, baseDirectory: String? = nil,
-                timeoutSeconds: Double = 30, assetMappings: [AssetMapping] = []) {
+                timeoutSeconds: Double = 30, assetMappings: [AssetMapping] = [],
+                allowsJavaScript: Bool = false) {
         self.id = id
         self.name = name
         self.command = command
@@ -137,6 +148,7 @@ public struct PreviewRendererConfig: Codable, Equatable, Sendable, Identifiable 
         self.baseDirectory = baseDirectory
         self.timeoutSeconds = timeoutSeconds
         self.assetMappings = assetMappings
+        self.allowsJavaScript = allowsJavaScript
     }
 
     public init(from decoder: Decoder) throws {
@@ -148,10 +160,11 @@ public struct PreviewRendererConfig: Codable, Equatable, Sendable, Identifiable 
         baseDirectory = try c.decodeIfPresent(String.self, forKey: .baseDirectory)
         timeoutSeconds = try c.decodeIfPresent(Double.self, forKey: .timeoutSeconds) ?? 30
         assetMappings = try c.decodeIfPresent([AssetMapping].self, forKey: .assetMappings) ?? []
+        allowsJavaScript = try c.decodeIfPresent(Bool.self, forKey: .allowsJavaScript) ?? false
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, command, workingDirectory, baseDirectory, timeoutSeconds, assetMappings
+        case id, name, command, workingDirectory, baseDirectory, timeoutSeconds, assetMappings, allowsJavaScript
     }
 }
 

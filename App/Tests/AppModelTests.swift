@@ -1,4 +1,5 @@
 import AaronCore
+import AppKit
 import XCTest
 @testable import Aaron
 
@@ -51,6 +52,13 @@ final class AppModelTests: XCTestCase {
         model.configuration.editor.monospaced = true
         try await waitForSave()
         XCTAssertTrue(try ConfigurationStore.load(from: configURL).editor.monospaced)
+    }
+
+    func testPendingChangesAreSavedWhenTheAppQuits() throws {
+        let model = AppModel(configurationURL: configURL)
+        model.configuration.editor.fontSize = 19
+        NotificationCenter.default.post(name: NSApplication.willTerminateNotification, object: NSApp)
+        XCTAssertEqual(try ConfigurationStore.load(from: configURL).editor.fontSize, 19)
     }
 
     func testReloadDoesNotRewriteFile() async throws {

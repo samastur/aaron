@@ -49,6 +49,9 @@ final class DocumentWindowModel {
 
     @ObservationIgnored private var previewTask: Task<Void, Never>?
     @ObservationIgnored private var actionTask: Task<Void, Never>?
+    /// Identifies the current run, so a cancelled run finishing late
+    /// doesn't reset the state of a newer one.
+    @ObservationIgnored private var actionRunID = UUID()
     @ObservationIgnored private var tagTask: Task<Void, Never>?
 
     init(appModel: AppModel) {
@@ -155,6 +158,10 @@ final class DocumentWindowModel {
         return BuiltinMarkdownRenderer()
     }
 
+    var previewAllowsJavaScript: Bool {
+        configuration.renderer(withID: rendererID)?.allowsJavaScript ?? false
+    }
+
     var assetResolver: PreviewAssetResolver {
         PreviewAssetResolver(mappings: configuration.renderer(withID: rendererID)?.assetMappings ?? [],
                              documentDirectory: fileURL?.deletingLastPathComponent())
@@ -174,6 +181,8 @@ final class DocumentWindowModel {
         aiNotice = nil
         runningActionName = action.name
         editor.setEditable(false)
+        let runID = UUID()
+        actionRunID = runID
 
         let document = editor.currentText
         let selected = editor.selectedRange
@@ -186,7 +195,7 @@ final class DocumentWindowModel {
         actionTask = Task { [weak self] in
             do {
                 let raws = try await AIActionRunner().run(request)
-                guard let self else { return }
+                guard let self, self.actionRunID == runID else { return }
                 if self.editor.currentText == document {
                     let before = Set(self.session.suggestions.map(\.id))
                     self.session.add(raws, actionName: action.name, text: document)
@@ -201,9 +210,10 @@ final class DocumentWindowModel {
             } catch is CancellationError {
                 // Cancelled by the user.
             } catch {
+                guard self?.actionRunID == runID else { return }
                 self?.aiError = "“\(action.name)” failed. \(error.localizedDescription)"
             }
-            self?.finishAction()
+            if self?.actionRunID == runID { self?.finishAction() }
         }
     }
 
@@ -219,6 +229,7 @@ final class DocumentWindowModel {
 
     func cancelAction() {
         actionTask?.cancel()
+        actionRunID = UUID()
         finishAction()
     }
 

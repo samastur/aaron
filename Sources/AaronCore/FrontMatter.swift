@@ -79,7 +79,10 @@ public struct FrontMatter: Equatable, Sendable {
             index += 1
         }
         guard !fields.isEmpty else { return nil }
-        if index < lines.count, lines[index].isBlank {
+        if index < lines.count {
+            // The block must end with an empty line; otherwise the first
+            // line is ordinary text that happens to look like "Key: value".
+            guard lines[index].isBlank else { return nil }
             end = NSMaxRange(lines[index].fullRange)
         }
         return FrontMatter(style: .pelican, fields: fields, range: NSRange(location: 0, length: end))
