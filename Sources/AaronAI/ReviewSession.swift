@@ -45,6 +45,18 @@ public struct Suggestion: Identifiable, Equatable, Sendable {
     public var range: NSRange?
     public var status: Status
 
+    public init(id: UUID = UUID(), actionName: String, original: String, replacement: String?,
+                message: String, category: String?, range: NSRange?, status: Status) {
+        self.id = id
+        self.actionName = actionName
+        self.original = original
+        self.replacement = replacement
+        self.message = message
+        self.category = category
+        self.range = range
+        self.status = status
+    }
+
     public var isComment: Bool { replacement == nil }
     public var canAccept: Bool { status == .open && replacement != nil }
 }
@@ -81,7 +93,7 @@ public struct ReviewSession: Equatable, Sendable {
                 status = .ambiguous
             }
             suggestions.append(Suggestion(
-                id: UUID(), actionName: actionName, original: raw.original,
+                actionName: actionName, original: raw.original,
                 replacement: raw.replacement, message: raw.message,
                 category: raw.category, range: range, status: status))
         }

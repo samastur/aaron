@@ -42,6 +42,7 @@ enum DebugHarness {
         var previewContains: String?
         var previewError: Bool?
         var aiError: Bool?
+        var aiNotice: String?
         var tagCount: Int?
         var tagCandidatesStartWith: [String]?
         var autoCompletionRequested: Bool?
@@ -162,6 +163,7 @@ enum DebugHarness {
             expect((model.previewError != nil) == value, "previewError is \(model.previewError ?? "nil")")
         }
         if let value = e.aiError { expect((model.aiError != nil) == value, "aiError is \(model.aiError ?? "nil")") }
+        if let value = e.aiNotice { expect(model.aiNotice == value, "aiNotice is \(model.aiNotice ?? "nil")") }
         if let value = e.tagCount { expect(model.tags.count == value, "tag count is \(model.tags.count)") }
         if let value = e.tagCandidatesStartWith {
             let candidates = model.editor.textView?.debugTagCandidates ?? []

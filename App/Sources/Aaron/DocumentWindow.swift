@@ -28,7 +28,7 @@ struct DocumentWindow: View {
         }
         .onChange(of: fileURL) { _, url in model?.fileURLChanged(url) }
         .onChange(of: document.text) { _, text in model?.textChanged(text) }
-        .onChange(of: appModel.configuration) { _, _ in model?.configurationChanged() }
+        .onChange(of: appModel.configuration) { old, _ in model?.configurationChanged(from: old) }
     }
 }
 

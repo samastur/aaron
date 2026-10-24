@@ -17,6 +17,9 @@ final class AppModel {
 
     /// Set when the configuration file could not be read or written.
     var configurationError: String?
+    /// The file on disk could not be parsed; it is not overwritten until it
+    /// has been reloaded successfully, so hand edits are not lost.
+    private var fileIsUnreadable = false
 
     @ObservationIgnored private var saveTask: Task<Void, Never>?
 
@@ -26,6 +29,7 @@ final class AppModel {
             configuration = try ConfigurationStore.load(from: configurationURL)
         } catch {
             configuration = .default
+            fileIsUnreadable = true
             configurationError = "Could not read \(configurationURL.path): \(error.localizedDescription). "
                 + "Using default settings; they will not be saved until the file is fixed or reloaded."
         }
@@ -34,17 +38,20 @@ final class AppModel {
     func reloadConfiguration() {
         do {
             let loaded = try ConfigurationStore.load(from: configurationURL)
-            saveTask?.cancel()
             configuration = loaded
+            // Just read from disk; no need to write it back.
             saveTask?.cancel()
             configurationError = nil
+            fileIsUnreadable = false
         } catch {
+            fileIsUnreadable = true
             configurationError = "Could not read \(configurationURL.path): \(error.localizedDescription)"
         }
     }
 
     func revealConfigurationFile() {
         if !FileManager.default.fileExists(atPath: configurationURL.path) {
+            fileIsUnreadable = false
             saveNow()
         }
         NSWorkspace.shared.activateFileViewerSelecting([configurationURL])
@@ -61,7 +68,7 @@ final class AppModel {
 
     func saveNow() {
         // Don't overwrite a file we failed to parse; the user may be fixing it.
-        guard configurationError == nil || !FileManager.default.fileExists(atPath: configurationURL.path) else { return }
+        guard !fileIsUnreadable else { return }
         do {
             try ConfigurationStore.save(configuration, to: configurationURL)
         } catch {

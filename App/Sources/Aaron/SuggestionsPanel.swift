@@ -13,6 +13,14 @@ struct SuggestionsPanel: View {
             Divider()
             if let error = model.aiError {
                 ErrorNote(message: error) { model.aiError = nil }
+            } else if let notice = model.aiNotice {
+                Text(notice)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .accessibilityIdentifier("aiNotice")
             }
             if model.visibleSuggestions.isEmpty {
                 emptyState

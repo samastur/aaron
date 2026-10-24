@@ -71,6 +71,19 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension: [md, markdown, mdown, mkd, mkdn]
               public.mime-type: [text/markdown]
+  AaronTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Aaron
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.gaivo.AaronTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Aaron.app/Contents/MacOS/Aaron
+        BUNDLE_LOADER: $(TEST_HOST)
   AaronUITests:
     type: bundle.ui-testing
     platform: macOS
@@ -92,10 +105,16 @@ schemes:
     build:
       targets:
         Aaron: all
+        AaronTests: [test]
         AaronUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
+      environmentVariables:
+        - variable: AARON_CONFIG_PATH
+          value: $(BUILD_DIR)/test-host-config.json
+          isEnabled: true
       targets:
+        - AaronTests
         - AaronUITests

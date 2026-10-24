@@ -38,6 +38,8 @@ final class DocumentWindowModel {
     private(set) var selectedSuggestionID: UUID?
     private(set) var runningActionName: String?
     var aiError: String?
+    /// Outcome of the last AI action, e.g. how many suggestions it made.
+    var aiNotice: String?
     var showHandledSuggestions = false
 
     // Pelican tags
@@ -92,14 +94,17 @@ final class DocumentWindowModel {
         refreshPreview()
     }
 
-    func configurationChanged() {
-        isPelican = PelicanDetector.isPelican(text, detection: configuration.pelican.detection)
-        if rendererID != PreviewRendererConfig.builtinID, configuration.renderer(withID: rendererID) == nil {
-            rendererID = PreviewRendererConfig.builtinID
+    func configurationChanged(from old: Configuration) {
+        let new = configuration
+        if old.pelican != new.pelican {
+            isPelican = PelicanDetector.isPelican(text, detection: new.pelican.detection)
+            loadTagsIfNeeded()
         }
-        tagsLoadedFor = nil
-        loadTagsIfNeeded()
-        refreshPreview()
+        if rendererID != PreviewRendererConfig.builtinID, new.renderer(withID: rendererID) == nil {
+            rendererID = PreviewRendererConfig.builtinID
+        } else if old.renderer(withID: rendererID) != new.renderer(withID: rendererID) {
+            refreshPreview()
+        }
     }
 
     /// Called for every change of the text storage, including undo and
@@ -166,6 +171,7 @@ final class DocumentWindowModel {
         }
         showReview = true
         aiError = nil
+        aiNotice = nil
         runningActionName = action.name
         editor.setEditable(false)
 
@@ -184,9 +190,8 @@ final class DocumentWindowModel {
                 if self.editor.currentText == document {
                     let before = Set(self.session.suggestions.map(\.id))
                     self.session.add(raws, actionName: action.name, text: document)
-                    if raws.isEmpty {
-                        self.aiError = nil
-                    }
+                    self.aiNotice = Self.notice(for: action.name,
+                                                added: self.session.suggestions.filter { !before.contains($0.id) })
                     if let first = self.session.highlights.first(where: { !before.contains($0.id) }) {
                         self.select(first.id)
                     }
@@ -200,6 +205,16 @@ final class DocumentWindowModel {
             }
             self?.finishAction()
         }
+    }
+
+    static func notice(for actionName: String, added: [Suggestion]) -> String {
+        guard !added.isEmpty else { return "“\(actionName)” found nothing to suggest." }
+        let unlocated = added.filter { $0.status == .notFound || $0.status == .ambiguous }.count
+        var notice = "“\(actionName)” made \(added.count) suggestion\(added.count == 1 ? "" : "s")"
+        if unlocated > 0 {
+            notice += ", \(unlocated) of them could not be located in the text"
+        }
+        return notice + "."
     }
 
     func cancelAction() {
@@ -273,6 +288,7 @@ final class DocumentWindowModel {
         session.clear()
         selectedSuggestionID = nil
         aiError = nil
+        aiNotice = nil
     }
 
     /// Clicking into highlighted text selects its suggestion.
