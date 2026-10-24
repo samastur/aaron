@@ -62,6 +62,9 @@ and prints a complete HTML page on standard output. For example, it could
 build a post with Pelican and print the result. Aaron sends the current text
 of the editor, including unsaved changes.
 
+The page is shown as a browser would show it: on a white background unless
+its styles set another, also in dark mode.
+
 Set them up in **Settings ▸ Preview** with **+**:
 
 | Field | Meaning |

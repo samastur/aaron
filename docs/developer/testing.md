@@ -61,6 +61,7 @@ Run the Debug app with:
 | `AARON_DEBUG_SCRIPT` | path of the step script (JSON array) |
 | `AARON_SNAPSHOT_DIR` | where snapshots, `progress.txt` and `result.txt` go |
 | `AARON_CONFIG_PATH` | configuration to use |
+| `AARON_APPEARANCE` | `dark` or `light` forces that appearance; otherwise the system's |
 
 Within a step, actions run first (in the order listed), then `wait`,
 `waitIdle`, `expect`, `snapshot` and finally `quit`.

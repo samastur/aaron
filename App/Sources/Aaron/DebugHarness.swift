@@ -74,6 +74,11 @@ enum DebugHarness {
         started = true
         let output = URL(fileURLWithPath: env["AARON_SNAPSHOT_DIR"] ?? NSTemporaryDirectory())
         try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        switch env["AARON_APPEARANCE"] {
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        default: break
+        }
         Task {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: scriptPath))

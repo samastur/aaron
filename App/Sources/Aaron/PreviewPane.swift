@@ -88,7 +88,6 @@ struct PreviewWebView: NSViewRepresentable {
         configuration.setURLSchemeHandler(context.coordinator.schemeHandler, forURLScheme: Self.scheme)
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
-        webView.setValue(false, forKey: "drawsBackground")
         context.coordinator.webView = webView
         #if DEBUG
         DebugHarness.previewWebView = webView

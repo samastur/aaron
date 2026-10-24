@@ -132,3 +132,8 @@ Each one can be revisited.
     plugins. For any others, you add `<plugin>.md` files to a help folder.
     The plugin list comes from a configurable command, so Aaron doesn't
     need to understand `pelicanconf.py`.
+39. **External previews are shown on white, as in a browser.** The web view
+    used to be transparent, so a page that sets no background of its own
+    showed black text on the dark window in dark mode. The built-in
+    renderer declares `color-scheme: light dark` and still follows the
+    appearance.
