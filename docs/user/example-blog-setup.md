@@ -57,6 +57,18 @@ panel when you need plugins that only run in a full build.
 reads tags the way Pelican does, so completion offers exactly the tags on
 the site, most used first.
 
+### Help for your plugins
+
+**Settings ▸ Pelican ▸ Plugins command** is
+
+```
+cd ~/blog/articles && .venv/bin/python -c 'import pelicanconf; [print(p) for p in pelicanconf.PLUGINS]'
+```
+
+It reads `PLUGINS` from `pelicanconf.py` with the blog's own Python, so
+**Help ▸ Markdown Help** (⇧⌘M) on a post explains `simple_footnotes`
+(`[ref]…[/ref]`) and `sitemap`, and follows along when you add plugins.
+
 ### Writing a new post
 
 1. **File ▸ New Pelican Post** (⌥⌘N) and fill in the title and tags; tags

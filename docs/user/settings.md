@@ -29,7 +29,8 @@ arrows, and the details of the selected item. See
 ## Pelican
 
 **Pelican mode**, the **tag command** with its working directory and
-timeout, **Test Command**, and the **new post template**. See
+timeout, **Test Command**, the **plugins command** and **help folder** for
+[Markdown Help](markdown-help.md), and the **new post template**. See
 [Pelican support](pelican.md).
 
 ## The configuration file
@@ -60,7 +61,7 @@ To use a different file, start Aaron with the environment variable
 ```json
 {
   "editor": {
-    "fontSize": 15,
+    "fontSize": 16,
     "monospaced": false
   },
   "previewRenderers": [
@@ -92,14 +93,16 @@ To use a different file, start Aaron with the environment variable
     "tagsCommand": "~/blog/scripts/list-tags --json",
     "tagsWorkingDirectory": null,
     "tagsTimeoutSeconds": 15,
-    "newPostTemplate": "Title: \nDate: {date}\nCategory: \nTags: \nSlug: \nStatus: draft\n\n"
+    "newPostTemplate": "Title: \nDate: {date}\nCategory: \nTags: \nSlug: \nStatus: draft\n\n",
+    "pluginsCommand": "cd ~/blog && .venv/bin/python -c 'import pelicanconf; [print(p) for p in pelicanconf.PLUGINS]'",
+    "helpDirectory": null
   }
 }
 ```
 
 | Key | Default | Meaning |
 |---|---|---|
-| `editor.fontSize` | `15` | Editor font size in points; values outside 9–36 are treated as 9 or 36. |
+| `editor.fontSize` | `16` | Editor font size in points; values outside 9–36 are treated as 9 or 36. |
 | `editor.monospaced` | `false` | Use a monospaced editor font. |
 | `previewRenderers` | `[]` | External renderers. `id` is any unique text (generated if missing), referenced by `defaultRenderer`. `command` is required. `workingDirectory` and `baseDirectory` are optional. `timeoutSeconds` defaults to 30. |
 | `previewRenderers[].assetMappings` | `[]` | `urlPrefix` → `directory` pairs, tried in order. Mappings with an empty `directory` are ignored. |
@@ -114,6 +117,8 @@ To use a different file, start Aaron with the environment variable
 
 All timeouts are in seconds; values below 1 count as 1.
 | `pelican.newPostTemplate` | see [Pelican support](pelican.md#new-posts) | Text of **File ▸ New Pelican Post**. |
+| `pelican.pluginsCommand` | `""` | Command printing the site's plugins for [Markdown Help](markdown-help.md); empty: no plugin help. Uses the tag command's timeout. |
+| `pelican.helpDirectory` | none | Folder with your own `<plugin>.md` help files. |
 
 All commands run with `/bin/zsh -l -c`, with `~/.local/bin`,
 `/opt/homebrew/bin` and `/usr/local/bin` added to `PATH`. When a command times

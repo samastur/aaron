@@ -106,6 +106,8 @@ Notes:
   therefore only works for commands that don't need a window (such as File ▸
   New Pelican Post), and scenarios using it report `SKIP` when the app is not
   active. Window commands are covered by the UI tests.
+- The harness never activates the app, so smoke tests don't take keyboard
+  focus from other apps. Windows still appear on screen while they run.
 - The completion popup runs a modal event loop, which would block the
   script; that's why typing suppresses it.
 

@@ -12,6 +12,7 @@ Settings.
 - [AI review](review.md): running AI actions and working through suggestions
 - [Setting up AI actions and providers](ai-setup.md): prompts, Claude, Codex, web search
 - [Pelican support](pelican.md): metadata, tag completion, new posts
+- [Markdown Help](markdown-help.md): the syntax reference, with help for your Pelican plugins
 - [Settings and the configuration file](settings.md): every option
 - [Keyboard shortcuts](keyboard-shortcuts.md)
 - [Troubleshooting](troubleshooting.md)

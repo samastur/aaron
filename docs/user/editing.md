@@ -14,6 +14,8 @@ Things that behave like in other Mac text editors:
   the next and previous match.
 - **Spelling** is checked as you type (red dotted underlines). Use
   **Edit ▸ Spelling and Grammar** to turn it off or to check grammar too.
+- **Markdown reference**: **Help ▸ Markdown Help** (⇧⌘M), see
+  [Markdown Help](markdown-help.md).
 - **Word completion**: press Esc (or ⌥Esc) to complete the word you are
   typing from the system dictionary. On a Pelican `Tags:` line this completes
   tags instead (see [Pelican support](pelican.md#tag-completion)).
@@ -34,13 +36,13 @@ Aaron highlights Markdown lightly so the text stays readable:
 | Links `[text](url)` and `<https://…>` | link text blue, URL grey |
 | Block quotes (`>`) | grey |
 | List markers (`-`, `*`, `+`, `1.`) | orange |
-| Metadata block at the top (`Key: value` lines ended by an empty line, or YAML between `---`) | keys teal and bold, values grey |
+| Metadata block at the top (`Key: value` lines ended by an empty line, or YAML between `---`) | keys bold, dark blue (teal in dark mode); values grey |
 
 Highlighting is approximate and never changes your text.
 
 ## Editor font
 
-The editor uses the system font at 15 points. In **Settings ▸ General** you
+The editor uses the system font at 16 points. In **Settings ▸ General** you
 can change the size (9–36 points) and switch to a monospaced font. The
 changes apply to all open windows immediately.
 

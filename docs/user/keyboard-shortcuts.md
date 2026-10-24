@@ -7,6 +7,7 @@
 | ⌘O | Open | File |
 | ⌘S | Save | File |
 | ⌘, | Settings | Aaron |
+| ⇧⌘M | Markdown Help | Help |
 | ⌥⌘P | Show/Hide Preview | View |
 | ⇧⌘R | Refresh Preview | View |
 | ⌥⌘R | Show/Hide Review | View |

@@ -99,6 +99,12 @@ If the command fails, the status bar shows **Tags unavailable**. Hover over
 it to see the error. Completion then offers nothing, and the next Pelican
 document you open tries again.
 
+## Help for Pelican syntax and plugins
+
+**Help ▸ Markdown Help** (⇧⌘M) on a Pelican post includes Pelican's metadata
+fields, its link syntax and help for the plugins your site uses. See
+[Markdown Help](markdown-help.md) for setting up the plugins command.
+
 ## New posts
 
 **File ▸ New Pelican Post** (⌥⌘N) opens a new document from the template in

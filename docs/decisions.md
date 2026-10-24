@@ -118,3 +118,17 @@ Each one can be revisited.
 33. **A metadata block must end with an empty line** (or the end of the
     document). Otherwise a document starting with "Note: …" would lose its
     first line in the preview and word count.
+34. **Metadata keys are dark blue in light mode**, teal in dark mode (your
+    request; teal lacked contrast on white).
+35. **The review panel uses a plain list with pastel selection** instead of
+    the system list, whose blue/grey selection made text hard to read. Text
+    is 14 pt (12 pt for labels).
+36. **Handled suggestions can be reversed** with Revert (accepted) and
+    Reopen (dismissed) as long as their text is unchanged. ⌘Z after
+    accepting restores the text but not the suggestion; Revert does both.
+37. **Markdown Help is ⇧⌘M.** ⌘?, the usual help shortcut, is reserved by
+    macOS for the Help menu's search field.
+38. **Plugin help is matched by name.** Aaron ships help for nine common
+    plugins. For any others, you add `<plugin>.md` files to a help folder.
+    The plugin list comes from a configurable command, so Aaron doesn't
+    need to understand `pelicanconf.py`.

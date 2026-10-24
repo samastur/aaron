@@ -64,7 +64,7 @@ Each suggestion appears in two places:
 - **In the editor**, the text it refers to is underlined and tinted:
   **orange** for suggested changes, **blue** for comments without a concrete
   change. The selected suggestion is tinted more strongly.
-- **In the panel**, as a card with:
+- **In the panel**, as a card with the text in 14-point type and:
   - a label with the suggestion's category (for example *Grammar*,
     *Spelling*, *Style*, *Fact*), as given by the AI, and the name of the action
     that produced it,
@@ -75,6 +75,9 @@ Each suggestion appears in two places:
 
 Suggestions are listed in the order they appear in the document. Ones that
 could not be placed in the text come last.
+
+The selected card has a light pastel background: orange for changes, blue
+for comments (darker shades in dark mode).
 
 Clicking a card selects the suggestion, then scrolls the editor to it,
 selects its text and flashes it. Clicking into highlighted text in the editor
@@ -121,18 +124,34 @@ times and the surrounding text doesn't decide which, it is marked
 the surrounding text the AI quoted does not match but the quote itself occurs
 exactly once, that occurrence is used.
 
-### Undo
-
-Undoing an accepted suggestion (⌘Z) restores the original text. The
-suggestion stays marked as accepted. Run the action again if you want it
-back.
-
-### Handled suggestions and clearing
+### Changing your mind
 
 Accepted and dismissed suggestions disappear from the list. Tick **Show
-handled** at the bottom of the panel to see them again (dimmed, labelled
-**Accepted** or **Dismissed**). The footer counts open and handled
-suggestions.
+handled** at the bottom of the panel to see them again, slightly dimmed and
+labelled **Accepted** or **Dismissed**, with a button to reverse the
+decision:
+
+- **Revert** (accepted suggestions) puts the original text back and makes
+  the suggestion open again. Like accepting, this is an ordinary edit you
+  can undo with ⌘Z.
+- **Reopen** (dismissed suggestions) makes the suggestion open again, with
+  its highlight.
+
+Aaron keeps track of where handled suggestions are while you go on editing.
+If you change the text a handled suggestion refers to (the replacement of an
+accepted one, or the quoted text of a dismissed one), it can no longer be
+reverted or reopened, and the button is disabled; hover over it to see why.
+
+The footer counts open and handled suggestions.
+
+### Undo
+
+Undoing an accepted suggestion with ⌘Z restores the original text. The
+suggestion stays marked as accepted, but its **Revert** button becomes
+disabled, because the replacement is no longer in the text. Use **Revert**
+instead of ⌘Z if you want the suggestion back in the list.
+
+### Clearing
 
 **Clear** (or **Review ▸ Clear Suggestions**) removes all suggestions.
 Suggestions are also discarded when you close the window; they are not

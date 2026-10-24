@@ -1,33 +1,89 @@
 {
-  "previewRenderers": [
+  "aiActions": [
     {
-      "id": "pelican-post",
-      "name": "Pelican (fast)",
-      "command": "~/blog/scripts/render-post --path {relpath}",
-      "baseDirectory": "~/blog/articles/content",
-      "timeoutSeconds": 30,
-      "assetMappings": [
-        { "urlPrefix": "/articles/", "directory": "~/blog/articles/output" }
-      ]
+      "id": "grammar",
+      "name": "Grammar and spelling",
+      "prompt": "Find spelling mistakes, grammatical errors, wrong punctuation and typos. Keep the author's voice and do not suggest stylistic rewrites. Ignore Markdown syntax, code, URLs and the metadata header unless they contain a typo in prose.",
+      "providerID": "claude"
     },
     {
-      "id": "pelican-full",
-      "name": "Pelican (full build)",
-      "command": "~/blog/scripts/build-post --path {relpath}",
-      "baseDirectory": "~/blog/articles/content",
-      "timeoutSeconds": 60,
-      "assetMappings": [
-        { "urlPrefix": "/articles/", "directory": "~/blog/articles/output" }
-      ]
+      "id": "fact-check",
+      "name": "Fact check",
+      "prompt": "Check factual claims (names, dates, numbers, technical statements, quotes) for accuracy. Report only claims that are wrong, outdated or doubtful, explain why in the message and give a corrected wording as the replacement when you are confident.",
+      "providerID": "claude-web"
+    },
+    {
+      "id": "style",
+      "name": "Style",
+      "prompt": "Suggest improvements to clarity, flow and concision: awkward or overly long sentences, repetition, filler words, unclear references. Preserve the author's voice and meaning. Prefer few, valuable suggestions over many small ones.",
+      "providerID": "claude"
+    }
+  ],
+  "aiProviders": [
+    {
+      "command": "claude -p --tools \"\" --no-session-persistence",
+      "id": "claude",
+      "name": "Claude",
+      "timeoutSeconds": 300
+    },
+    {
+      "command": "claude -p --tools \"WebSearch,WebFetch\" --allowedTools \"WebSearch,WebFetch\" --no-session-persistence",
+      "id": "claude-web",
+      "name": "Claude (web)",
+      "timeoutSeconds": 300
+    },
+    {
+      "command": "codex exec --skip-git-repo-check --ephemeral --sandbox read-only -",
+      "id": "codex",
+      "name": "Codex",
+      "timeoutSeconds": 300
     }
   ],
   "defaultRenderer": {
     "markdown": "builtin",
     "pelican": "pelican-post"
   },
+  "editor": {
+    "fontSize": 16,
+    "monospaced": false
+  },
   "pelican": {
     "detection": "automatic",
+    "newPostTemplate": "Title: \nDate: {date}\nCategory: \nTags: \nSlug: \nStatus: draft\n\n",
     "tagsCommand": "~/blog/scripts/list-tags --json",
-    "tagsTimeoutSeconds": 20
-  }
+    "tagsTimeoutSeconds": 20,
+    "pluginsCommand": "cd ~/blog/articles && .venv/bin/python -c 'import pelicanconf; [print(p) for p in pelicanconf.PLUGINS]'"
+  },
+  "previewRenderers": [
+    {
+      "allowsJavaScript": false,
+      "assetMappings": [
+        {
+          "directory": "~/blog/articles/output",
+          "id": "13F157A3-05EB-40B5-9D29-B627BD0AA62F",
+          "urlPrefix": "/articles/"
+        }
+      ],
+      "baseDirectory": "~/blog/articles/content",
+      "command": "~/blog/scripts/render-post --path {relpath}",
+      "id": "pelican-post",
+      "name": "Pelican (fast)",
+      "timeoutSeconds": 30
+    },
+    {
+      "allowsJavaScript": false,
+      "assetMappings": [
+        {
+          "directory": "~/blog/articles/output",
+          "id": "C9845F24-4C57-4BD0-9C52-70FBB9F7D229",
+          "urlPrefix": "/articles/"
+        }
+      ],
+      "baseDirectory": "~/blog/articles/content",
+      "command": "~/blog/scripts/build-post --path {relpath}",
+      "id": "pelican-full",
+      "name": "Pelican (full build)",
+      "timeoutSeconds": 60
+    }
+  ]
 }
