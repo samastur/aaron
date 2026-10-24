@@ -10,6 +10,19 @@ final class MarkdownTextView: NSTextView {
 
     private var isInsertingCompletion = false
 
+    #if DEBUG
+    /// Set by the debug harness: count automatic completion instead of
+    /// opening the (modal) completion list.
+    var debugSuppressCompletionPopup = false
+    private(set) var debugAutoCompletionCount = 0
+
+    /// The tag candidates the completion list would show right now.
+    var debugTagCandidates: [String]? {
+        guard let context = tagContext else { return nil }
+        return TagCompletion.candidates(for: context.partial, in: tagCompletionSource(), excluding: context.existing)
+    }
+    #endif
+
     private var tagContext: TagCompletion.Context? {
         guard isTagCompletionEnabled() else { return nil }
         let selection = selectedRange()
@@ -46,6 +59,10 @@ final class MarkdownTextView: NSTextView {
         guard !candidates.isEmpty else { return }
         // Not if the only candidate is exactly what was typed.
         if candidates.count == 1, candidates[0].caseInsensitiveCompare(context.partial) == .orderedSame { return }
+        #if DEBUG
+        debugAutoCompletionCount += 1
+        if debugSuppressCompletionPopup { return }
+        #endif
         DispatchQueue.main.async { [weak self] in
             self?.complete(nil)
         }

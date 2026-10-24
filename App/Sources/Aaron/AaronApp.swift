@@ -10,6 +10,7 @@ struct AaronApp: App {
             DocumentWindow(document: file.$document, fileURL: file.fileURL)
                 .environment(appModel)
         }
+        .defaultSize(width: 1400, height: 860)
         .commands {
             AppCommands(appModel: appModel)
         }

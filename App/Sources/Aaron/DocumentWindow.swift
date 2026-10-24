@@ -21,6 +21,9 @@ struct DocumentWindow: View {
                 let created = DocumentWindowModel(appModel: appModel)
                 created.documentOpened(text: document.text, fileURL: fileURL)
                 model = created
+                #if DEBUG
+                DebugHarness.attach(created)
+                #endif
             }
         }
         .onChange(of: fileURL) { _, url in model?.fileURLChanged(url) }

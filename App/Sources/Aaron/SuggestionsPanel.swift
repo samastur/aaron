@@ -91,6 +91,8 @@ struct SuggestionsPanel: View {
         HStack {
             Text(summary)
                 .font(.caption)
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("reviewSummary")
             Spacer()
@@ -110,7 +112,8 @@ struct SuggestionsPanel: View {
         let open = all.filter { $0.status == .open }.count
         let accepted = all.filter { $0.status == .accepted }.count
         let dismissed = all.filter { $0.status == .dismissed }.count
-        return "\(open) open · \(accepted) accepted · \(dismissed) dismissed"
+        guard !all.isEmpty else { return "" }
+        return "\(open) open · \(accepted + dismissed) handled"
     }
 }
 
@@ -165,7 +168,7 @@ struct SuggestionRow: View {
             if suggestion.status == .open || suggestion.status == .stale
                 || suggestion.status == .notFound || suggestion.status == .ambiguous {
                 HStack {
-                    if suggestion.replacement != nil {
+                    if suggestion.replacement != nil && suggestion.status == .open {
                         Button("Accept") { model.accept(suggestion.id) }
                             .disabled(!suggestion.canAccept || model.isRunningAction)
                             .accessibilityIdentifier("acceptSuggestion")

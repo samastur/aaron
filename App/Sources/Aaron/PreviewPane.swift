@@ -88,6 +88,9 @@ struct PreviewWebView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground")
         context.coordinator.webView = webView
+        #if DEBUG
+        DebugHarness.previewWebView = webView
+        #endif
         return webView
     }
 
