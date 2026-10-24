@@ -1,0 +1,33 @@
+{
+  "previewRenderers": [
+    {
+      "id": "pelican-post",
+      "name": "Pelican (fast)",
+      "command": "~/blog/scripts/render-post --path {relpath}",
+      "baseDirectory": "~/blog/articles/content",
+      "timeoutSeconds": 30,
+      "assetMappings": [
+        { "urlPrefix": "/articles/", "directory": "~/blog/articles/output" }
+      ]
+    },
+    {
+      "id": "pelican-full",
+      "name": "Pelican (full build)",
+      "command": "~/blog/scripts/build-post --path {relpath}",
+      "baseDirectory": "~/blog/articles/content",
+      "timeoutSeconds": 60,
+      "assetMappings": [
+        { "urlPrefix": "/articles/", "directory": "~/blog/articles/output" }
+      ]
+    }
+  ],
+  "defaultRenderer": {
+    "markdown": "builtin",
+    "pelican": "pelican-post"
+  },
+  "pelican": {
+    "detection": "automatic",
+    "tagsCommand": "~/blog/scripts/list-tags --json",
+    "tagsTimeoutSeconds": 20
+  }
+}

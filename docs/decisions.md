@@ -93,3 +93,20 @@ Each one can be revisited.
     your shell's environment.
 24. **Timeouts**: 30 s for preview commands, 15 s for tag commands and 300 s
     for AI providers. Each can be changed per command.
+25. **Commands without a working directory run in your home folder**, not in
+    `/`, which is where apps started from the Finder would otherwise run them.
+26. **The preview may load plain `http://` resources**
+    (`NSAllowsArbitraryLoadsInWebContent`). Old posts embed images over HTTP,
+    and the preview should look like the published page. App Transport
+    Security still applies to everything outside the web view.
+27. **Windows open at 1400 × 860 points**, so that the editor, the preview and
+    the review panel all fit.
+28. **After an AI action, a one-line summary** says how many suggestions it
+    made and how many could not be located, or that it found nothing. This was
+    not requested; without it an empty result looked like a failure.
+29. **An unreadable configuration file is never overwritten.** Aaron shows an
+    alert, uses the defaults and stops saving until the file has been reloaded
+    successfully, so hand edits are not lost to a typing mistake.
+30. **A Debug-only test harness is built into the app** so that it can be
+    checked end to end without macOS UI-automation permission (see
+    `docs/developer/testing.md`). It is compiled out of Release builds.
