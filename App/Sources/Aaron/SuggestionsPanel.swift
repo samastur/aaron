@@ -134,6 +134,7 @@ private struct ErrorNote: View {
             ScrollView {
                 Text(message)
                     .font(.callout)
+                    .accessibilityIdentifier("aiErrorMessage")
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

@@ -45,7 +45,9 @@ final class ReviewUITests: AaronUITestCase {
         try launch(aiCommand: script("failing-ai.sh"), document: try writeDocument("fail.md", story))
         waitFor(app.textViews["editor"])
         runCheck()
-        waitFor(app.otherElements["aiError"].firstMatch, timeout: 20)
+        let message = app.staticTexts["aiErrorMessage"]
+        waitFor(message, timeout: 20)
+        XCTAssertTrue((message.value as? String)?.contains("Not logged in") == true)
         screenshot("ai-error")
     }
 

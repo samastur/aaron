@@ -173,6 +173,7 @@ private struct ActionDetail: View {
     var body: some View {
         Form {
             TextField("Name", text: $action.name)
+                .accessibilityIdentifier("itemName")
             Picker("Provider", selection: $action.providerID) {
                 ForEach(providers) { Text($0.name).tag($0.id) }
                 if !providers.contains(where: { $0.id == action.providerID }) {
@@ -321,8 +322,10 @@ private struct ItemListEditor<Item: Identifiable, Detail: View>: View where Item
                 Divider()
                 HStack(spacing: 2) {
                     Button { add() } label: { Image(systemName: "plus") }
+                        .accessibilityIdentifier("addItem")
                     Button { remove() } label: { Image(systemName: "minus") }
                         .disabled(selection == nil)
+                        .accessibilityIdentifier("removeItem")
                     Spacer()
                     Button { move(-1) } label: { Image(systemName: "chevron.up") }
                         .disabled(selection == nil)

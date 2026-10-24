@@ -7,7 +7,7 @@ final class PelicanUITests: AaronUITestCase {
         try launch(document: try writeDocument("post.md", post))
         waitFor(app.textViews["editor"])
         waitFor(app.staticTexts["3 tags"])
-        XCTAssertEqual(app.staticTexts["documentMode"].label, "Pelican")
+        XCTAssertEqual(app.staticTexts["documentMode"].value as? String, "Pelican")
         screenshot("pelican")
     }
 
@@ -22,11 +22,10 @@ final class PelicanUITests: AaronUITestCase {
         editor.typeKey(.downArrow, modifierFlags: [])
         editor.typeKey(.rightArrow, modifierFlags: .command)
         editor.typeText(", re")
-        // The completion list opens by itself; Return inserts the best match.
-        let list = app.tables.firstMatch
-        waitFor(list)
+        // The completion list (not exposed to accessibility) opens by itself
+        // with the best match filled in; Return accepts it.
+        sleep(1)
         screenshot("tag-completion")
-        XCTAssertTrue(list.staticTexts["review"].exists || list.cells.containing(.staticText, identifier: "review").firstMatch.exists)
         editor.typeKey(.return, modifierFlags: [])
         waitUntil { (editor.value as? String)?.contains("Tags: books, review") == true }
     }

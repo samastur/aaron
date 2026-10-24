@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import os
 
 public struct ProcessResult: Sendable, Equatable {
     public var stdout: String
@@ -223,7 +224,9 @@ private func waitForExit(_ pid: pid_t) -> Int32 {
 /// Shared state between the reader threads, the exit waiter, the timeout
 /// and cancellation. The continuation is resumed exactly once.
 private final class RunState: @unchecked Sendable {
-    private let lock = NSLock()
+    // An unfair lock donates priority, so the main thread starting a run
+    // doesn't wait on a lower-priority reader thread holding it.
+    private let lock = OSAllocatedUnfairLock()
     private var continuation: CheckedContinuation<ProcessResult, Error>?
     private var processGroup: pid_t?
     private var stdout = Data()

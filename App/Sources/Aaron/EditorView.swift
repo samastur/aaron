@@ -138,7 +138,7 @@ struct EditorView: NSViewRepresentable {
             didSet { styles = EditorStyles(settings: settings) }
         }
         private(set) var styles = EditorStyles(settings: EditorSettings())
-        private var lastEditWasTypedCharacter = false
+        private var completionPending = false
 
         init(text: Binding<String>, model: DocumentWindowModel) {
             self.text = text
@@ -151,7 +151,7 @@ struct EditorView: NSViewRepresentable {
             guard editedMask.contains(.editedCharacters) else { return }
             let edit = TextEdit(storageEditedRange: editedRange, changeInLength: delta, newText: textStorage.string)
             MainActor.assumeIsolated {
-                lastEditWasTypedCharacter = edit.range.length == 0 && (edit.replacement as NSString).length == 1
+                if textView?.lastChangeWasTyping == true { completionPending = true }
                 model.recordEdit(edit)
             }
         }
@@ -163,7 +163,8 @@ struct EditorView: NSViewRepresentable {
             if !textView.hasMarkedText() {
                 applySyntaxHighlighting()
             }
-            if lastEditWasTypedCharacter {
+            if completionPending {
+                completionPending = false
                 textView.autoCompleteTagIfNeeded()
             }
         }

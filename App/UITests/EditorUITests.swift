@@ -21,7 +21,8 @@ final class EditorUITests: AaronUITestCase {
         editor.typeKey(.downArrow, modifierFlags: .command)
         editor.typeText("\nA brand new sentence")
         waitFor(app.staticTexts["5 words"])
-        waitFor(app.webViews.staticTexts.containing(NSPredicate(format: "label CONTAINS 'brand new'")).firstMatch)
+        // Web content exposes its text as the element's value.
+        waitFor(app.webViews.staticTexts.matching(NSPredicate(format: "value CONTAINS 'brand new'")).firstMatch)
     }
 
     func testPreviewCanBeHiddenAndShown() throws {

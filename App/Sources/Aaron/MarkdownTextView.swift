@@ -9,6 +9,8 @@ final class MarkdownTextView: NSTextView {
     var isTagCompletionEnabled: () -> Bool = { false }
 
     private var isInsertingCompletion = false
+    /// The latest change came from the keyboard (not paste, undo or completion).
+    private(set) var lastChangeWasTyping = false
 
     #if DEBUG
     /// Set by the debug harness: count automatic completion instead of
@@ -27,6 +29,14 @@ final class MarkdownTextView: NSTextView {
         guard isTagCompletionEnabled() else { return nil }
         let selection = selectedRange()
         return TagCompletion.context(in: string, caret: selection.location + selection.length)
+    }
+
+    override func insertText(_ string: Any, replacementRange: NSRange) {
+        // Typing over an inline completion replaces the selected suggestion,
+        // so this can't be inferred from the shape of the edit.
+        lastChangeWasTyping = !isInsertingCompletion
+        defer { lastChangeWasTyping = false }
+        super.insertText(string, replacementRange: replacementRange)
     }
 
     override var rangeForUserCompletion: NSRange {

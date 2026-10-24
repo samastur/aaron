@@ -5,11 +5,11 @@ final class SettingsUITests: AaronUITestCase {
         try launch(document: try writeDocument("s.md", "Text"))
         waitFor(app.textViews["editor"])
         app.typeKey(",", modifierFlags: .command)
-        let settings = app.windows.containing(.toolbarButton, identifier: "AI").firstMatch
-        waitFor(app.toolbarButtons["AI"])
-        app.toolbarButtons["AI"].click()
-        settings.buttons["plus"].firstMatch.click()
-        let name = settings.textFields["Name"].firstMatch
+        let settings = app.windows["com_apple_SwiftUI_Settings_window"]
+        waitFor(settings)
+        settings.toolbars.buttons["AI"].click()
+        settings.buttons["addItem"].click()
+        let name = settings.textFields["itemName"]
         waitFor(name)
         name.doubleClick()
         name.typeKey("a", modifierFlags: .command)
