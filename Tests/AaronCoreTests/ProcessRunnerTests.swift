@@ -46,6 +46,12 @@ struct ProcessRunnerTests {
         #expect(reported.resolvingSymlinksInPath() == dir.resolvingSymlinksInPath())
     }
 
+    @Test func runsInHomeDirectoryByDefault() async throws {
+        let result = try await runner.run("pwd -P", timeout: .seconds(10))
+        let reported = URL(fileURLWithPath: result.stdout.trimmingCharacters(in: .newlines))
+        #expect(reported.resolvingSymlinksInPath() == URL(fileURLWithPath: NSHomeDirectory()).resolvingSymlinksInPath())
+    }
+
     @Test func pathIncludesCommonToolDirectories() async throws {
         let result = try await runner.run("echo $PATH", timeout: .seconds(10))
         #expect(result.stdout.contains("/opt/homebrew/bin"))

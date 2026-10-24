@@ -50,7 +50,8 @@ public struct ProcessRunner: Sendable {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: shell)
         process.arguments = (loginShell ? ["-l"] : []) + ["-c", command]
-        if let workingDirectory { process.currentDirectoryURL = workingDirectory }
+        // Apps started from Finder run in "/"; the home folder is a saner default.
+        process.currentDirectoryURL = workingDirectory ?? URL(fileURLWithPath: NSHomeDirectory())
         process.environment = environment()
 
         let stdout = Pipe(), stderr = Pipe(), stdin = Pipe()

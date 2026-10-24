@@ -187,15 +187,28 @@ enum DebugHarness {
     }
 
     private static func snapshot(_ name: String, model: DocumentWindowModel, output: URL) async {
+        var previewImage: NSImage?
+        if model.showPreview, let webView = previewWebView {
+            previewImage = try? await webView.takeSnapshot(configuration: nil)
+            if let tiff = previewImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                try? rep.representation(using: .png, properties: [:])?.write(to: output.appendingPathComponent("\(name)-preview.png"))
+            }
+        }
         if let window = model.editor.textView?.window, let view = window.contentView?.superview ?? window.contentView,
            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
             view.cacheDisplay(in: view.bounds, to: rep)
+            // cacheDisplay can't capture web views; paint the preview snapshot in.
+            if let previewImage, let webView = previewWebView, webView.window === window,
+               let context = NSGraphicsContext(bitmapImageRep: rep) {
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = context
+                let frame = webView.convert(webView.bounds, to: view)
+                previewImage.draw(in: view.isFlipped
+                    ? NSRect(x: frame.minX, y: view.bounds.height - frame.maxY, width: frame.width, height: frame.height)
+                    : frame)
+                NSGraphicsContext.restoreGraphicsState()
+            }
             try? rep.representation(using: .png, properties: [:])?.write(to: output.appendingPathComponent("\(name)-window.png"))
-        }
-        if model.showPreview, let webView = previewWebView,
-           let image = try? await webView.takeSnapshot(configuration: nil),
-           let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
-            try? rep.representation(using: .png, properties: [:])?.write(to: output.appendingPathComponent("\(name)-preview.png"))
         }
         if let controller = model.editor.textView?.window?.contentViewController {
             var lines: [String] = []

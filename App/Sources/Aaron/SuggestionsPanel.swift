@@ -66,7 +66,6 @@ struct SuggestionsPanel: View {
                     Text("Running “\(name)”…").font(.callout)
                     Spacer()
                     Button("Cancel") { model.cancelAction() }
-                        .keyboardShortcut(".", modifiers: .command)
                         .accessibilityIdentifier("cancelAction")
                 }
                 Text("Editing is paused until the AI answers.")
@@ -193,17 +192,24 @@ struct SuggestionRow: View {
 
     @ViewBuilder private var changeView: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(suggestion.original)
-                .strikethrough(suggestion.replacement != nil)
-                .foregroundStyle(suggestion.replacement != nil ? Color.red : Color.secondary)
+            Text(styled(suggestion.original,
+                        color: suggestion.replacement != nil ? .systemRed : .secondaryLabelColor,
+                        strikethrough: suggestion.replacement != nil))
             if let replacement = suggestion.replacement {
-                Text(replacement.isEmpty ? "(remove)" : replacement)
-                    .foregroundStyle(.green)
+                Text(styled(replacement.isEmpty ? "(remove)" : replacement, color: .systemGreen, strikethrough: false))
             }
         }
         .font(.callout.monospaced())
         .lineLimit(6)
         .textSelection(.enabled)
+    }
+
+    /// Colour set on the text itself: selectable text ignores foregroundStyle.
+    private func styled(_ text: String, color: NSColor, strikethrough: Bool) -> AttributedString {
+        var attributed = AttributedString(text)
+        attributed.foregroundColor = Color(nsColor: color)
+        if strikethrough { attributed.strikethroughStyle = .single }
+        return attributed
     }
 
     @ViewBuilder private var statusBadge: some View {
