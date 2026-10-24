@@ -126,6 +126,18 @@ cancelled". The UI tests click and type through the accessibility layer and
 complement the smoke tests: they check the real controls, menus and
 shortcuts that the harness bypasses.
 
+### Known warning: priority inversion in UI tests
+
+UI test runs report *"[Internal] Thread running at User-interactive
+quality-of-service class waiting on a lower QoS thread…"* for most tests.
+It comes from AppKit, not from Aaron. When the test runner inspects the menu
+bar through accessibility, AppKit builds **File ▸ Revert To**, and
+`-[NSDocument _addRevertItemsToMenu:]` waits on a semaphore while listing the
+document's saved versions. The full stack (AppKit, CoreFoundation, run loop;
+Aaron appears only as `AaronApp.$main`) was captured from the
+`com.apple.runtime-issues` log and symbolicated with `lldb`. The warning does
+not appear in the package, app unit or smoke tests.
+
 ## Fixtures
 
 `App/UITests/Fixtures` holds shell scripts standing in for external tools:

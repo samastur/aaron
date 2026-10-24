@@ -17,17 +17,14 @@ session, so some checks are still outstanding.
 | Real AI: Claude and Codex return suggestions that resolve correctly | live tests, plus a Claude run on a 1,374-word post in the app (27 suggestions, all located) |
 | Release build compiles without the harness | `xcodebuild -configuration Release` |
 | Menu commands enabled for the active document window | checked by hand (View ▸ Show/Hide Preview, Review actions and Clear Suggestions) |
+| UI: opening, typing, preview toggling and renderer switching, review run/accept/undo/dismiss/keyboard navigation, read-only while running and cancel (⌘.), AI errors, Pelican detection and tags, tag completion popup (opens while typing, Return accepts), New Pelican Post, adding an action in Settings | `AaronUITests`: 13 tests pass. Runtime warning from AppKit, see [testing.md](testing.md#known-warning-priority-inversion-in-ui-tests) |
 
-## Not yet verified (needs an unlocked screen)
+## Not yet verified
 
-- The XCUITest suite (`AaronUITests`): written and compiling, never run.
-  Selectors will probably need adjustment on the first run. Needs UI
-  automation permission.
 - By hand:
-  - the tag completion popup: it opens while typing, Return inserts the
-    tag, Esc on an empty tag lists all tags;
-  - keyboard shortcuts;
-  - the Settings window (editing lists, Test Command, Restore Defaults);
+  - Esc on an empty tag listing all tags;
+  - the Settings window beyond adding an action (Test Command, Restore
+    Defaults, renderer and provider editing);
   - the review panel's open/close animation;
   - dark mode;
   - File ▸ Revert with open suggestions.
