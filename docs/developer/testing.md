@@ -82,14 +82,16 @@ Within a step, actions run first (in the order listed), then `wait`,
 | `"waitIdle": true` | wait until no AI action runs and no preview is pending |
 | `"snapshot": "name"` | write `name-window.png`, `name-preview.png`, `name-state.json`, view and controller dumps |
 | `"expect": {…}` | record failures for mismatches (below) |
-| `"quit": true` | write `result.txt` (`PASS` or `FAIL` plus failures) and quit |
+| `"menu": ["Review", "Next Suggestion"]` | choose a main-menu item (fails if missing or disabled) |
+| `"quit": true` | write `result.txt` (`PASS`, `FAIL` plus failures, or `SKIP` plus reason) and quit |
 
 Expectation keys: `text`, `textContains`, `textLacks`, `isPelican`,
 `isEditable`, `renderer`, `previewContains`, `previewError` (bool),
 `aiError` (bool), `aiNotice`, `tagCount`, `tagCandidatesStartWith`,
 `autoCompletionRequested`, `statuses` (counts by suggestion status, e.g.
 `{"open": 2, "notFound": 1}`), `selectedSuggestion` (original text),
-`showReview`, `words`, `previewTextContains`, `previewTextLacks` (the
+`showReview`, `showPreview`, `windowCount`, `anyWindowTextStartsWith`,
+`menuItemEnabled` (menu path), `words`, `previewTextContains`, `previewTextLacks` (the
 rendered page's visible text, read with JavaScript from the app).
 
 Notes:
@@ -99,6 +101,9 @@ Notes:
 - When the screen is locked, windows are occluded and AppKit animations
   don't run; the harness therefore toggles the review panel without
   animation. Nothing else depends on the screen being unlocked.
+- Menu commands act on the key window. When the app can't become active
+  (screen locked, or launched in the background), scenarios using `menu`
+  report `SKIP` instead of failing.
 - The completion popup runs a modal event loop, which would block the
   script; that's why typing suppresses it.
 

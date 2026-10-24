@@ -31,6 +31,9 @@ for name in $scenarios; do
   if [[ -f $work/out/result.txt ]] && [[ $(head -1 $work/out/result.txt) == PASS ]]; then
     print "PASS  $name"
     rm -rf $work
+  elif [[ -f $work/out/result.txt ]] && [[ $(head -1 $work/out/result.txt) == SKIP ]]; then
+    print "SKIP  $name  ($(sed -n 2p $work/out/result.txt))"
+    rm -rf $work
   else
     print "FAIL  $name  (output in $work)"
     [[ -f $work/out/result.txt ]] && sed 's/^/      /' $work/out/result.txt || print "      no result (timed out or crashed)"

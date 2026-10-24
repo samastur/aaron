@@ -20,6 +20,8 @@ enum DebugHarness {
         var run: String?
         var waitIdle: Bool?
         var cancel: Bool?
+        /// Main menu path, e.g. ["Review", "Next Suggestion"].
+        var menu: [String]?
         var accept: Int?
         var dismiss: Int?
         var undo: Bool?
@@ -52,9 +54,16 @@ enum DebugHarness {
         var words: Int?
         var previewTextContains: String?
         var previewTextLacks: String?
+        var showPreview: Bool?
+        var windowCount: Int?
+        /// Some document window's text starts with this.
+        var anyWindowTextStartsWith: String?
+        var menuItemEnabled: [String]?
     }
 
     private static var failures: [String] = []
+    /// Why the scenario could not be checked here, e.g. menus need an active app.
+    private static var skipReason: String?
 
     static weak var previewWebView: WKWebView?
     private static var started = false
@@ -70,6 +79,11 @@ enum DebugHarness {
                 let data = try Data(contentsOf: URL(fileURLWithPath: scriptPath))
                 let steps = try JSONDecoder().decode([Step].self, from: data)
                 try await Task.sleep(for: .seconds(1))
+                // Menu commands target the key window, so make ours key.
+                NSApp.activate()
+                model.editor.textView?.window?.makeKeyAndOrderFront(nil)
+                model.editor.focus()
+                try await Task.sleep(for: .milliseconds(300))
                 for (index, step) in steps.enumerated() {
                     progress("step \(index) start", output: output)
                     try await perform(step, model: model, output: output)
@@ -121,6 +135,19 @@ enum DebugHarness {
             model.dismiss(model.session.highlights[index].id)
         }
         if step.undo == true { textView?.undoManager?.undo() }
+        if step.menu != nil, !NSApp.isActive {
+            // Menu commands act on the key window; a locked screen or a
+            // background launch leaves the app inactive.
+            skipReason = "menus need the app to be active (is the screen locked?)"
+        }
+        if skipReason != nil, step.quit != true { return }
+        if let path = step.menu {
+            if let (menu, index) = menuItem(path), menu.items[index].isEnabled {
+                menu.performActionForItem(at: index)
+            } else {
+                failures.append("menu item \(path) missing or disabled")
+            }
+        }
         if let renderer = step.renderer { model.rendererID = renderer }
         if let preview = step.preview { model.showPreview = preview }
 
@@ -143,7 +170,8 @@ enum DebugHarness {
             await snapshot(name, model: model, output: output)
         }
         if step.quit == true {
-            let result = failures.isEmpty ? "PASS\n" : "FAIL\n" + failures.joined(separator: "\n") + "\n"
+            let result = skipReason.map { "SKIP\n\($0)\n" }
+                ?? (failures.isEmpty ? "PASS\n" : "FAIL\n" + failures.joined(separator: "\n") + "\n")
             try? Data(result.utf8).write(to: output.appendingPathComponent("result.txt"))
             NSApp.terminate(nil)
         }
@@ -196,6 +224,17 @@ enum DebugHarness {
         if let value = e.previewTextLacks {
             expect(!previewText.contains(value), "preview text contains \(value.debugDescription)")
         }
+        if let value = e.showPreview { expect(model.showPreview == value, "showPreview is \(model.showPreview)") }
+        let editors = NSApp.windows.compactMap { findTextView(in: $0.contentView) }
+        if let value = e.windowCount { expect(editors.count == value, "document window count is \(editors.count)") }
+        if let value = e.anyWindowTextStartsWith {
+            expect(editors.contains { $0.string.hasPrefix(value) },
+                   "no window text starts with \(value.debugDescription): \(editors.map { String($0.string.prefix(40)) })")
+        }
+        if let path = e.menuItemEnabled {
+            let enabled = menuItem(path).map { $0.0.items[$0.1].isEnabled } ?? false
+            expect(enabled, "menu item \(path) is not enabled")
+        }
         if let value = e.words { expect(model.statistics.words == value, "word count is \(model.statistics.words)") }
     }
 
@@ -241,7 +280,16 @@ enum DebugHarness {
         if let frame = model.editor.textView?.window?.contentView?.superview {
             try? Data(hierarchy(frame).utf8).write(to: output.appendingPathComponent("\(name)-views.txt"))
         }
+        var menus: [String] = []
+        for top in NSApp.mainMenu?.items ?? [] {
+            top.submenu?.update()
+            let items = top.submenu?.items.map { "\($0.title)\($0.isEnabled ? "" : " (disabled)")" } ?? []
+            menus.append("\(top.title): " + items.joined(separator: " | "))
+        }
+        try? Data(menus.joined(separator: "\n").utf8).write(to: output.appendingPathComponent("\(name)-menus.txt"))
         let state: [String: Any] = [
+            "windowIsKey": model.editor.textView?.window?.isKeyWindow ?? false,
+            "appIsActive": NSApp.isActive,
             "text": model.editor.currentText,
             "selection": NSStringFromRange(model.editor.selectedRange),
             "isEditable": model.editor.textView?.isEditable ?? false,
@@ -280,6 +328,27 @@ enum DebugHarness {
         if view.isHidden { line += " hidden" }
         if let identifier = view.accessibilityIdentifier() as String?, !identifier.isEmpty { line += " id=\(identifier)" }
         return ([line] + view.subviews.map { hierarchy($0, depth: depth + 1) }).joined(separator: "\n")
+    }
+
+    private static func menuItem(_ path: [String]) -> (NSMenu, Int)? {
+        guard var menu = NSApp.mainMenu, !path.isEmpty else { return nil }
+        menu.update()
+        for title in path.dropLast() {
+            guard let submenu = menu.items.first(where: { $0.title == title })?.submenu else { return nil }
+            submenu.update()
+            menu = submenu
+        }
+        guard let index = menu.items.firstIndex(where: { $0.title == path.last }) else { return nil }
+        return (menu, index)
+    }
+
+    private static func findTextView(in view: NSView?) -> MarkdownTextView? {
+        guard let view else { return nil }
+        if let textView = view as? MarkdownTextView { return textView }
+        for subview in view.subviews {
+            if let found = findTextView(in: subview) { return found }
+        }
+        return nil
     }
 
     private static func progress(_ message: String, output: URL) {
