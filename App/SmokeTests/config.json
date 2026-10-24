@@ -1,0 +1,18 @@
+{
+  "aiProviders": [
+    {"id": "fake", "name": "Fake AI", "command": "/bin/sh '$FIXTURES/fake-ai.sh'", "timeoutSeconds": 20},
+    {"id": "slow", "name": "Slow AI", "command": "/bin/sh '$FIXTURES/slow-ai.sh'", "timeoutSeconds": 60},
+    {"id": "failing", "name": "Failing AI", "command": "/bin/sh '$FIXTURES/failing-ai.sh'"}
+  ],
+  "aiActions": [
+    {"id": "check", "name": "Check Everything", "prompt": "Check the text.", "providerID": "fake"},
+    {"id": "slow", "name": "Slow Check", "prompt": "Check slowly.", "providerID": "slow"},
+    {"id": "failing", "name": "Failing Check", "prompt": "Fail.", "providerID": "failing"}
+  ],
+  "previewRenderers": [
+    {"id": "external", "name": "Fake External", "command": "/bin/sh '$FIXTURES/fake-preview.sh'"},
+    {"id": "broken", "name": "Broken", "command": "/bin/sh '$FIXTURES/failing-preview.sh'"}
+  ],
+  "defaultRenderer": {"pelican": "external"},
+  "pelican": {"tagsCommand": "/bin/sh '$FIXTURES/fake-tags.sh'"}
+}

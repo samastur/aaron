@@ -19,6 +19,7 @@ enum DebugHarness {
         var complete: Bool?
         var run: String?
         var waitIdle: Bool?
+        var cancel: Bool?
         var accept: Int?
         var dismiss: Int?
         var undo: Bool?
@@ -26,8 +27,31 @@ enum DebugHarness {
         var preview: Bool?
         var review: Bool?
         var snapshot: String?
+        var expect: Expectation?
         var quit: Bool?
     }
+
+    /// Checks of the window's state; every given field must match.
+    struct Expectation: Decodable {
+        var text: String?
+        var textContains: String?
+        var textLacks: String?
+        var isPelican: Bool?
+        var isEditable: Bool?
+        var renderer: String?
+        var previewContains: String?
+        var previewError: Bool?
+        var aiError: Bool?
+        var tagCount: Int?
+        var tagCandidatesStartWith: [String]?
+        var autoCompletionRequested: Bool?
+        var statuses: [String: Int]?
+        var selectedSuggestion: String?
+        var showReview: Bool?
+        var words: Int?
+    }
+
+    private static var failures: [String] = []
 
     static weak var previewWebView: WKWebView?
     private static var started = false
@@ -50,13 +74,16 @@ enum DebugHarness {
                 }
             } catch {
                 log("script failed: \(error)", output: output)
+                try? Data("FAIL\nscript failed: \(error)\n".utf8).write(to: output.appendingPathComponent("result.txt"))
+                NSApp.terminate(nil)
             }
         }
     }
 
+    /// Within a step: actions first, then `wait`, `waitIdle`, the checks
+    /// and the snapshot, then `quit`.
     private static func perform(_ step: Step, model: DocumentWindowModel, output: URL) async throws {
         let textView = model.editor.textView
-        if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
         if let marker = step.caretAfter, let textView {
             let range = (textView.string as NSString).range(of: marker)
             if range.location != NSNotFound { textView.setSelectedRange(NSRange(location: NSMaxRange(range), length: 0)) }
@@ -74,14 +101,16 @@ enum DebugHarness {
             }
         }
         if step.complete == true { textView?.complete(nil) }
+        if let review = step.review {
+            // Without animation: animations don't run while the screen is locked.
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { model.showReview = review }
+        }
         if let id = step.run, let action = model.configuration.aiActions.first(where: { $0.id == id }) {
             model.run(action)
         }
-        if step.waitIdle == true {
-            while model.isRunningAction || model.isRenderingPreview {
-                try await Task.sleep(for: .milliseconds(100))
-            }
-        }
+        if step.cancel == true { model.cancelAction() }
         if let index = step.accept, model.session.highlights.indices.contains(index) {
             model.accept(model.session.highlights[index].id)
         }
@@ -91,16 +120,68 @@ enum DebugHarness {
         if step.undo == true { textView?.undoManager?.undo() }
         if let renderer = step.renderer { model.rendererID = renderer }
         if let preview = step.preview { model.showPreview = preview }
-        if let review = step.review {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { model.showReview = review }
+
+        if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
+        if step.waitIdle == true {
+            while model.isRunningAction || model.isPreviewPending {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+        }
+        if let expectation = step.expect {
+            check(expectation, model: model)
         }
         if let name = step.snapshot {
             try await Task.sleep(for: .milliseconds(300))
             await snapshot(name, model: model, output: output)
         }
-        if step.quit == true { NSApp.terminate(nil) }
+        if step.quit == true {
+            let result = failures.isEmpty ? "PASS\n" : "FAIL\n" + failures.joined(separator: "\n") + "\n"
+            try? Data(result.utf8).write(to: output.appendingPathComponent("result.txt"))
+            NSApp.terminate(nil)
+        }
+    }
+
+    private static func check(_ e: Expectation, model: DocumentWindowModel) {
+        let text = model.editor.currentText
+        func expect(_ ok: Bool, _ message: @autoclosure () -> String) {
+            if !ok { failures.append(message()) }
+        }
+        if let value = e.text { expect(text == value, "text is \(text.debugDescription), expected \(value.debugDescription)") }
+        if let value = e.textContains { expect(text.contains(value), "text lacks \(value.debugDescription)") }
+        if let value = e.textLacks { expect(!text.contains(value), "text contains \(value.debugDescription)") }
+        if let value = e.isPelican { expect(model.isPelican == value, "isPelican is \(model.isPelican)") }
+        if let value = e.isEditable {
+            let editable = model.editor.textView?.isEditable ?? false
+            expect(editable == value, "isEditable is \(editable)")
+        }
+        if let value = e.renderer { expect(model.rendererID == value, "renderer is \(model.rendererID)") }
+        if let value = e.previewContains {
+            expect(model.previewHTML?.contains(value) == true, "preview lacks \(value.debugDescription)")
+        }
+        if let value = e.previewError {
+            expect((model.previewError != nil) == value, "previewError is \(model.previewError ?? "nil")")
+        }
+        if let value = e.aiError { expect((model.aiError != nil) == value, "aiError is \(model.aiError ?? "nil")") }
+        if let value = e.tagCount { expect(model.tags.count == value, "tag count is \(model.tags.count)") }
+        if let value = e.tagCandidatesStartWith {
+            let candidates = model.editor.textView?.debugTagCandidates ?? []
+            expect(Array(candidates.prefix(value.count)) == value, "tag candidates are \(candidates)")
+        }
+        if let value = e.autoCompletionRequested {
+            let count = model.editor.textView?.debugAutoCompletionCount ?? 0
+            expect((count > 0) == value, "auto completion count is \(count)")
+        }
+        if let value = e.statuses {
+            var counts: [String: Int] = [:]
+            for suggestion in model.session.suggestions { counts["\(suggestion.status)", default: 0] += 1 }
+            expect(counts == value, "suggestion statuses are \(counts)")
+        }
+        if let value = e.selectedSuggestion {
+            expect(model.selectedSuggestion?.original == value,
+                   "selected suggestion is \(model.selectedSuggestion?.original ?? "nil")")
+        }
+        if let value = e.showReview { expect(model.showReview == value, "showReview is \(model.showReview)") }
+        if let value = e.words { expect(model.statistics.words == value, "word count is \(model.statistics.words)") }
     }
 
     private static func snapshot(_ name: String, model: DocumentWindowModel, output: URL) async {

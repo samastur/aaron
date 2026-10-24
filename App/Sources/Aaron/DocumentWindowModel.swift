@@ -23,11 +23,13 @@ final class DocumentWindowModel {
         didSet { if showPreview && !oldValue { refreshPreview() } }
     }
     var rendererID = PreviewRendererConfig.builtinID {
-        didSet { if rendererID != oldValue { refreshPreview() } }
+        didSet { if rendererID != oldValue { refreshPreview(immediately: true) } }
     }
     private(set) var previewHTML: String?
     private(set) var previewError: String?
     private(set) var isRenderingPreview = false
+    /// A render is scheduled or running.
+    private(set) var isPreviewPending = false
     private var rendererChosen = false
 
     // Review
@@ -114,12 +116,19 @@ final class DocumentWindowModel {
         let request = PreviewRequest(text: text, fileURL: fileURL)
         let renderer = currentRenderer()
         let delay: Duration = immediately ? .zero : (rendererID == PreviewRendererConfig.builtinID ? .milliseconds(250) : .milliseconds(800))
+        isPreviewPending = true
         previewTask = Task { [weak self] in
             if delay > .zero {
                 try? await Task.sleep(for: delay)
             }
             guard !Task.isCancelled else { return }
             self?.isRenderingPreview = true
+            defer {
+                if !Task.isCancelled {
+                    self?.isRenderingPreview = false
+                    self?.isPreviewPending = false
+                }
+            }
             do {
                 let html = try await renderer.render(request)
                 guard !Task.isCancelled, let self else { return }
@@ -131,7 +140,6 @@ final class DocumentWindowModel {
                 guard !Task.isCancelled, let self else { return }
                 self.previewError = error.localizedDescription
             }
-            self?.isRenderingPreview = false
         }
     }
 

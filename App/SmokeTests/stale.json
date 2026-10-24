@@ -1,0 +1,49 @@
+[
+ {
+  "wait": 1.5
+ },
+ {
+  "review": true
+ },
+ {
+  "run": "check",
+  "waitIdle": true,
+  "expect": {
+   "statuses": {
+    "open": 2,
+    "notFound": 1
+   }
+  }
+ },
+ {
+  "caretAfter": "# Story",
+  "type": " time",
+  "expect": {
+   "statuses": {
+    "open": 2,
+    "notFound": 1
+   }
+  }
+ },
+ {
+  "accept": 0,
+  "expect": {
+   "textContains": "saw the quick",
+   "textLacks": "teh"
+  }
+ },
+ {
+  "caretAfter": "jumped",
+  "type": "X",
+  "expect": {
+   "statuses": {
+    "accepted": 1,
+    "stale": 1,
+    "notFound": 1
+   }
+  }
+ },
+ {
+  "quit": true
+ }
+]

@@ -1,0 +1,38 @@
+[
+ {
+  "wait": 1.5
+ },
+ {
+  "review": true
+ },
+ {
+  "run": "failing",
+  "waitIdle": true,
+  "expect": {
+   "aiError": true,
+   "isEditable": true,
+   "statuses": {}
+  }
+ },
+ {
+  "snapshot": "failure"
+ },
+ {
+  "run": "slow",
+  "wait": 0.5,
+  "expect": {
+   "isEditable": false
+  }
+ },
+ {
+  "cancel": true,
+  "wait": 0.3,
+  "expect": {
+   "isEditable": true,
+   "statuses": {}
+  }
+ },
+ {
+  "quit": true
+ }
+]

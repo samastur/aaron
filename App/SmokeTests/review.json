@@ -1,0 +1,62 @@
+[
+ {
+  "wait": 1.5
+ },
+ {
+  "review": true
+ },
+ {
+  "run": "check",
+  "wait": 0.3,
+  "expect": {
+   "isEditable": false,
+   "showReview": true
+  }
+ },
+ {
+  "waitIdle": true,
+  "expect": {
+   "isEditable": true,
+   "aiError": false,
+   "statuses": {
+    "open": 2,
+    "notFound": 1
+   },
+   "selectedSuggestion": "teh"
+  }
+ },
+ {
+  "snapshot": "suggestions"
+ },
+ {
+  "accept": 0,
+  "expect": {
+   "textContains": "saw the quick",
+   "statuses": {
+    "accepted": 1,
+    "open": 1,
+    "notFound": 1
+   },
+   "selectedSuggestion": "jumped over"
+  }
+ },
+ {
+  "undo": true,
+  "expect": {
+   "textContains": "saw teh quick"
+  }
+ },
+ {
+  "dismiss": 0,
+  "expect": {
+   "statuses": {
+    "accepted": 1,
+    "dismissed": 1,
+    "notFound": 1
+   }
+  }
+ },
+ {
+  "quit": true
+ }
+]

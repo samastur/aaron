@@ -1,0 +1,53 @@
+[
+ {
+  "wait": 1.5,
+  "waitIdle": true,
+  "expect": {
+   "isPelican": false,
+   "renderer": "builtin",
+   "words": 12,
+   "previewContains": "<h1>Story</h1>",
+   "previewError": false
+  }
+ },
+ {
+  "caretAtEnd": true,
+  "type": "More words.",
+  "wait": 0.6,
+  "waitIdle": true,
+  "expect": {
+   "words": 14,
+   "previewContains": "More words."
+  }
+ },
+ {
+  "renderer": "external",
+  "wait": 1.2,
+  "waitIdle": true,
+  "expect": {
+   "previewContains": "External renderer",
+   "previewError": false
+  }
+ },
+ {
+  "renderer": "broken",
+  "wait": 1.2,
+  "waitIdle": true,
+  "expect": {
+   "previewError": true
+  }
+ },
+ {
+  "renderer": "builtin",
+  "wait": 0.6,
+  "waitIdle": true,
+  "expect": {
+   "previewError": false,
+   "previewContains": "<h1>Story</h1>"
+  }
+ },
+ {
+  "snapshot": "preview",
+  "quit": true
+ }
+]

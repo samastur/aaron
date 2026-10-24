@@ -1,0 +1,28 @@
+[
+ {
+  "wait": 2.0,
+  "waitIdle": true,
+  "expect": {
+   "isPelican": true,
+   "renderer": "external",
+   "tagCount": 3,
+   "previewContains": "External renderer"
+  }
+ },
+ {
+  "caretAfter": "Tags: books",
+  "type": ", re",
+  "expect": {
+   "tagCandidatesStartWith": [
+    "review",
+    "annual review"
+   ],
+   "autoCompletionRequested": true,
+   "textContains": "Tags: books, re"
+  }
+ },
+ {
+  "snapshot": "pelican",
+  "quit": true
+ }
+]
