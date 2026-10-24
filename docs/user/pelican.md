@@ -21,7 +21,10 @@ The post starts here.
 ```
 
 The block is a run of `Key: value` lines at the very top, ended by an empty
-line. Lines indented by four spaces or a tab continue the previous value.
+line (or the end of the document). Lines indented by four spaces or a tab
+continue the previous value. If the lines are followed directly by ordinary
+text, they are not metadata. A document starting with "Note: …" followed
+by more text is plain Markdown.
 The status bar shows **Pelican** for such documents, **Markdown** otherwise,
 and the mode updates as you type.
 

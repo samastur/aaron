@@ -89,7 +89,8 @@ Expectation keys: `text`, `textContains`, `textLacks`, `isPelican`,
 `aiError` (bool), `aiNotice`, `tagCount`, `tagCandidatesStartWith`,
 `autoCompletionRequested`, `statuses` (counts by suggestion status, e.g.
 `{"open": 2, "notFound": 1}`), `selectedSuggestion` (original text),
-`showReview`, `words`.
+`showReview`, `words`, `previewTextContains`, `previewTextLacks` (the
+rendered page's visible text, read with JavaScript from the app).
 
 Notes:
 

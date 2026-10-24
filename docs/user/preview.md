@@ -32,7 +32,8 @@ The preview keeps its scroll position when it is updated.
 ## The built-in renderer
 
 The built-in renderer supports CommonMark plus GitHub-style tables and
-strikethrough (`~~text~~`). Raw HTML in the document is passed through.
+strikethrough (`~~text~~`). Raw HTML in the document is passed through, but
+scripts in it do not run (see [JavaScript](#javascript)).
 
 A metadata block at the top of the document is not shown as text. Instead
 the preview shows the `Title` as a heading and the other fields in a small
@@ -69,7 +70,8 @@ Set them up in **Settings ▸ Preview** with **+**:
 | **Command** | Shell command, run by `zsh` as a login shell, so your usual `PATH` applies. May contain placeholders (below). |
 | **Working directory** | Folder the command runs in. Empty: the document's folder (or your home folder for unsaved documents). `~` is allowed. |
 | **{relpath} relative to** | Folder that `{relpath}` is computed from, typically your blog's content folder. |
-| **Timeout** | Seconds before the command is stopped (default 30). |
+| **Timeout** | Seconds before the command is stopped (default 30, at least 1). When it is stopped, so is everything it started. |
+| **Allow JavaScript in the preview** | Let scripts in the rendered page run (off by default, see [JavaScript](#javascript)). |
 | **Asset folders** | Where the preview finds files the page refers to with root-relative URLs (below). |
 
 ### Placeholders
@@ -102,6 +104,17 @@ where those files are on disk: the **URL prefix** `/articles/` with the
 Mappings are tried in order. URLs that match no mapping (or whose file does
 not exist) are looked up in the document's folder. URLs that try to escape a
 folder with `..` are refused.
+
+### JavaScript
+
+Scripts in the preview page don't run, whichever renderer produced it. The
+preview can load files from the document's folder and from asset folders. A
+script in a document's HTML, for example in a Markdown file you downloaded,
+could otherwise read those files and send them elsewhere.
+
+If your theme needs scripts to display a post properly, turn on **Allow
+JavaScript in the preview** for that renderer. Only do this for documents
+you trust.
 
 ### Errors
 

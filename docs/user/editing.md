@@ -34,7 +34,7 @@ Aaron highlights Markdown lightly so the text stays readable:
 | Links `[text](url)` and `<https://…>` | link text blue, URL grey |
 | Block quotes (`>`) | grey |
 | List markers (`-`, `*`, `+`, `1.`) | orange |
-| Metadata block at the top (`Key: value` or YAML between `---`) | keys teal and bold, values grey |
+| Metadata block at the top (`Key: value` lines ended by an empty line, or YAML between `---`) | keys teal and bold, values grey |
 
 Highlighting is approximate and never changes your text.
 

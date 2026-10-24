@@ -17,6 +17,10 @@ example `~/blog/scripts/render-post --path post.md < post.md`. Common causes:
 (`/theme/…`). Add an [asset folder](preview.md#asset-folders) mapping that
 points the URL prefix to the folder containing those files.
 
+**The theme looks broken because it needs JavaScript**: scripts are off in
+the preview by default. Turn on **Allow JavaScript in the preview** for that
+renderer ([why it's off](preview.md#javascript)).
+
 **Relative images don't show in a new document**: save it first; until then
 it has no folder to load images from.
 

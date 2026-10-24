@@ -110,3 +110,11 @@ Each one can be revisited.
 30. **A Debug-only test harness is built into the app** so that it can be
     checked end to end without macOS UI-automation permission (see
     `docs/developer/testing.md`). It is compiled out of Release builds.
+31. **Scripts don't run in the preview** unless enabled per renderer. The
+    preview serves files from the document's folder, so a script in a
+    downloaded document could read neighbouring files and send them out.
+32. **Commands run in their own process group**, so a timeout or cancel stops
+    everything they started (e.g. Pelican subprocesses), not just the shell.
+33. **A metadata block must end with an empty line** (or the end of the
+    document). Otherwise a document starting with "Note: …" would lose its
+    first line in the preview and word count.

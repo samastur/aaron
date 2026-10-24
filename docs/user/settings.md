@@ -71,6 +71,7 @@ To use a different file, start Aaron with the environment variable
       "workingDirectory": null,
       "baseDirectory": "~/blog/articles/content",
       "timeoutSeconds": 30,
+      "allowsJavaScript": false,
       "assetMappings": [
         { "urlPrefix": "/articles/", "directory": "~/blog/articles/output" }
       ]
@@ -98,10 +99,11 @@ To use a different file, start Aaron with the environment variable
 
 | Key | Default | Meaning |
 |---|---|---|
-| `editor.fontSize` | `15` | Editor font size in points. |
+| `editor.fontSize` | `15` | Editor font size in points; values outside 9–36 are treated as 9 or 36. |
 | `editor.monospaced` | `false` | Use a monospaced editor font. |
 | `previewRenderers` | `[]` | External renderers. `id` is any unique text (generated if missing), referenced by `defaultRenderer`. `command` is required. `workingDirectory` and `baseDirectory` are optional. `timeoutSeconds` defaults to 30. |
-| `previewRenderers[].assetMappings` | `[]` | `urlPrefix` → `directory` pairs, tried in order. |
+| `previewRenderers[].assetMappings` | `[]` | `urlPrefix` → `directory` pairs, tried in order. Mappings with an empty `directory` are ignored. |
+| `previewRenderers[].allowsJavaScript` | `false` | Let scripts in the rendered page run. |
 | `defaultRenderer.markdown`, `defaultRenderer.pelican` | `"builtin"` | Renderer `id` for new windows; `"builtin"` is the built-in Markdown renderer. |
 | `aiProviders` | Claude, Claude (web), Codex | `id`, `name`, `command`, `timeoutSeconds` (default 300). If the key is present, it replaces the whole default list. |
 | `aiActions` | Grammar and spelling, Fact check, Style | `id`, `name`, `prompt`, `providerID`. If the key is present, it replaces the whole default list. |
@@ -109,7 +111,14 @@ To use a different file, start Aaron with the environment variable
 | `pelican.tagsCommand` | `""` | Command printing the known tags; empty disables tag completion. |
 | `pelican.tagsWorkingDirectory` | the post's folder | Folder the tag command runs in. |
 | `pelican.tagsTimeoutSeconds` | `15` | Timeout of the tag command. |
+
+All timeouts are in seconds; values below 1 count as 1.
 | `pelican.newPostTemplate` | see [Pelican support](pelican.md#new-posts) | Text of **File ▸ New Pelican Post**. |
 
 All commands run with `/bin/zsh -l -c`, with `~/.local/bin`,
-`/opt/homebrew/bin` and `/usr/local/bin` added to `PATH`.
+`/opt/homebrew/bin` and `/usr/local/bin` added to `PATH`. When a command times
+out or is cancelled, it and every process it started are stopped (and killed
+if they don't stop within two seconds).
+
+Changes are written to the file shortly after you make them, and at the
+latest when Aaron quits.
