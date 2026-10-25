@@ -27,6 +27,15 @@ struct AppCommands: Commands {
             }
             .keyboardShortcut("r", modifiers: [.command, .option])
             .disabled(window == nil)
+
+            Menu("Profile") {
+                ForEach(appModel.profileNames, id: \.self) { name in
+                    Toggle(name, isOn: Binding(
+                        get: { window?.profileName == name },
+                        set: { if $0 { window?.profileName = name } }))
+                }
+            }
+            .disabled(window == nil)
             Divider()
         }
 

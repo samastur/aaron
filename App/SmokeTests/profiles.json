@@ -1,0 +1,20 @@
+[
+ {
+  "wait": 2.0,
+  "waitIdle": true,
+  "expect": {"profile": "Default", "isPelican": true, "renderer": "external", "tagCount": 3}
+ },
+ {
+  "profile": "Plain",
+  "wait": 0.5,
+  "waitIdle": true,
+  "expect": {"profile": "Plain", "isPelican": false, "renderer": "builtin", "windowProfiles": {"profiles.md": "Plain"}}
+ },
+ {
+  "profile": "Default",
+  "wait": 0.5,
+  "waitIdle": true,
+  "expect": {"isPelican": true, "renderer": "builtin", "previewContains": "Some text"},
+  "quit": true
+ }
+]

@@ -26,6 +26,8 @@ enum DebugHarness {
         var dismiss: Int?
         var undo: Bool?
         var renderer: String?
+        /// Switch the window to this profile.
+        var profile: String?
         var preview: Bool?
         var review: Bool?
         var snapshot: String?
@@ -56,6 +58,9 @@ enum DebugHarness {
         var previewTextLacks: String?
         var showPreview: Bool?
         var windowCount: Int?
+        var profile: String?
+        /// Document file name → the profile of its window.
+        var windowProfiles: [String: String]?
         /// Some document window's text starts with this.
         var anyWindowTextStartsWith: String?
         var menuItemEnabled: [String]?
@@ -151,6 +156,7 @@ enum DebugHarness {
             }
         }
         if let renderer = step.renderer { model.rendererID = renderer }
+        if let profile = step.profile { model.profileName = profile }
         if let preview = step.preview { model.showPreview = preview }
 
         if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
@@ -236,6 +242,15 @@ enum DebugHarness {
         if let path = e.menuItemEnabled {
             let enabled = menuItem(path).map { $0.0.items[$0.1].isEnabled } ?? false
             expect(enabled, "menu item \(path) is not enabled")
+        }
+        if let value = e.profile { expect(model.profileName == value, "profile is \(model.profileName)") }
+        if let expected = e.windowProfiles {
+            let actual = Dictionary(model.appModel.windows.compactMap { window in
+                window.fileURL.map { ($0.lastPathComponent, window.profileName) }
+            }, uniquingKeysWith: { first, _ in first })
+            for (file, profile) in expected {
+                expect(actual[file] == profile, "window of \(file) has profile \(actual[file] ?? "none"): \(actual)")
+            }
         }
         if let value = e.words { expect(model.statistics.words == value, "word count is \(model.statistics.words)") }
     }

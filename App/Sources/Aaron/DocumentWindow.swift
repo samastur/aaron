@@ -65,6 +65,8 @@ private struct DocumentContent: View {
 
                 AIActionsMenu(model: model)
 
+                ProfileMenu(model: model)
+
                 Toggle(isOn: $model.showReview) {
                     Label("Review", systemImage: "text.badge.checkmark")
                 }
@@ -115,6 +117,40 @@ struct AIActionsMenu: View {
     }
 }
 
+/// Toolbar menu for choosing the window's profile.
+struct ProfileMenu: View {
+    let model: DocumentWindowModel
+
+    var body: some View {
+        ProfilePicker(model: model) {
+            Label("Profile: \(model.profileName)", systemImage: "slider.horizontal.3")
+        }
+        .help("Profile used by this window: \(model.profileName)")
+        .accessibilityIdentifier("profileMenu")
+    }
+}
+
+/// A menu listing the profiles, with the window's one checked.
+struct ProfilePicker<MenuLabel: View>: View {
+    @Bindable var model: DocumentWindowModel
+    @ViewBuilder var label: () -> MenuLabel
+    @Environment(AppModel.self) private var appModel
+
+    var body: some View {
+        Menu {
+            Picker("Profile", selection: $model.profileName) {
+                ForEach(appModel.profileNames, id: \.self) { Text($0).tag($0) }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+            Divider()
+            SettingsLink { Text("Edit Profiles…") }
+        } label: {
+            label()
+        }
+    }
+}
+
 struct StatusBar: View {
     let model: DocumentWindowModel
 
@@ -134,6 +170,14 @@ struct StatusBar: View {
             }
             Text(model.isPelican ? "Pelican" : "Markdown")
                 .accessibilityIdentifier("documentMode")
+            ProfilePicker(model: model) {
+                Text(model.profileName)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.borderless)
+            .fixedSize()
+            .help("Profile used by this window")
+            .accessibilityIdentifier("statusProfile")
         }
         .font(.callout)
         .foregroundStyle(.secondary)
