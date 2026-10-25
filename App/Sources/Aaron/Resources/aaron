@@ -1,0 +1,105 @@
+#!/bin/zsh
+# aaron: open files in Aaron, optionally with a configuration profile.
+# Installed as a symlink to the copy inside Aaron.app, so it always opens
+# files in the app it came with.
+emulate -L zsh
+setopt err_return no_unset
+
+usage() {
+  print -r -- "usage: aaron [--profile NAME] FILE...
+       aaron --list-profiles
+       aaron --help
+
+Opens each FILE in Aaron, starting it if needed, and returns right away.
+  --profile NAME   open the files with profile NAME instead of the default
+  --list-profiles  list the profiles; the default is marked"
+}
+
+die() { print -r -u2 -- "aaron: $1"; exit ${2:-1} }
+
+app=${0:A:h:h:h}
+if [[ -n ${AARON_SUPPORT_DIR:-} ]]; then
+  support=${~AARON_SUPPORT_DIR}
+else
+  folder=$(/usr/bin/defaults read "$app/Contents/Info" AaronSupportFolderName 2>/dev/null) || folder=Aaron
+  support="$HOME/Library/Application Support/$folder"
+fi
+
+profiles() {
+  local f
+  for f in "$support"/Profiles/*.json(N); do print -r -- ${f:t:r}; done | LC_ALL=C sort -f
+}
+
+default_profile() {
+  local name
+  name=$(/usr/bin/plutil -extract defaultProfile raw -o - "$support/profiles.json" 2>/dev/null) || name=
+  if [[ -n $name && -f "$support/Profiles/$name.json" ]]; then
+    print -r -- $name
+  else
+    profiles | head -n 1
+  fi
+}
+
+# Percent-encodes everything except unreserved characters and "/".
+encode() {
+  local LC_ALL=C s=$1 out= c i
+  for (( i = 1; i <= ${#s}; i++ )); do
+    c=${s[i]}
+    if [[ $c == [A-Za-z0-9._~/-] ]]; then out+=$c; else out+=$(printf '%%%02X' "'$c"); fi
+  done
+  print -r -- $out
+}
+
+profile=
+files=()
+while (( $# )); do
+  case $1 in
+    -h|--help) usage; exit 0 ;;
+    --list-profiles)
+      def=$(default_profile)
+      profiles | while read -r p; do
+        if [[ $p == $def ]]; then print -r -- "$p (default)"; else print -r -- $p; fi
+      done
+      exit 0 ;;
+    --profile) (( $# >= 2 )) || die "--profile needs a name" 2; profile=$2; shift 2 ;;
+    --profile=*) profile=${1#--profile=}; shift ;;
+    --) shift; files+=("$@"); break ;;
+    -*) die "unknown option $1 (see aaron --help)" 2 ;;
+    *) files+=("$1"); shift ;;
+  esac
+done
+(( ${#files} )) || { usage >&2; exit 2 }
+
+# Check every file before opening any.
+paths=()
+for f in $files; do
+  [[ -f $f ]] || die "no such file: $f"
+  paths+=("${f:a}")
+done
+
+# The app creates its profiles and the token on first launch.
+token_file="$support/cli-token"
+if [[ ! -s $token_file ]]; then
+  [[ -n ${AARON_CLI_DRY_RUN:-} ]] || /usr/bin/open -g -a "$app"
+  for i in {1..150}; do [[ -s $token_file ]] && break; sleep 0.1; done
+  [[ -s $token_file ]] || die "Aaron did not start (no $token_file)"
+fi
+
+if [[ -n $profile ]]; then
+  match=
+  for p in ${(f)"$(profiles)"}; do
+    [[ ${(L)p} == ${(L)profile} ]] && match=$p
+  done
+  [[ -n $match ]] || die "unknown profile \"$profile\". Profiles: ${(j:, :)${(f)"$(profiles)"}}"
+  profile=$match
+fi
+
+url="aaron://open?token=$(encode "$(<$token_file)")"
+[[ -n $profile ]] && url+="&profile=$(encode "$profile")"
+for p in $paths; do url+="&path=$(encode "$p")"; done
+
+if [[ -n ${AARON_CLI_DRY_RUN:-} ]]; then
+  print -r -- $url
+else
+  /usr/bin/open -a "$app" "$url"
+fi

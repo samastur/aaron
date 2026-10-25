@@ -26,6 +26,9 @@ targets:
     platform: macOS
     sources:
       - path: Sources/Aaron
+        excludes: ["Resources/aaron"]
+      - path: Sources/Aaron/Resources/aaron
+        buildPhase: resources
     dependencies:
       - package: AaronKit
         product: AaronCore
