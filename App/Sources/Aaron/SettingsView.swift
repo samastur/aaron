@@ -1,16 +1,184 @@
 import AaronCore
 import AaronPelican
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
+    @Environment(AppModel.self) private var appModel
+
     var body: some View {
         TabView {
-            Tab("General", systemImage: "gearshape") { GeneralSettings() }
-            Tab("Preview", systemImage: "doc.richtext") { PreviewSettings() }
-            Tab("AI", systemImage: "sparkles") { AISettings() }
-            Tab("Pelican", systemImage: "tag") { PelicanSettingsView() }
+            Tab("Profiles", systemImage: "person.2") { ProfilesSettings() }
+            Tab("General", systemImage: "gearshape") { WithProfilePicker { GeneralSettings() } }
+            Tab("Preview", systemImage: "doc.richtext") { WithProfilePicker { PreviewSettings() } }
+            Tab("AI", systemImage: "sparkles") { WithProfilePicker { AISettings() } }
+            Tab("Pelican", systemImage: "tag") { WithProfilePicker { PelicanSettingsView() } }
         }
-        .frame(width: 760, height: 560)
+        .frame(width: 760, height: 600)
+        .onAppear {
+            // Edit the profile of the window that was in front.
+            appModel.settingsProfileName = appModel.frontProfileName ?? appModel.defaultProfileName
+        }
+    }
+}
+
+/// The settings tabs edit one profile, chosen at the top.
+private struct WithProfilePicker<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    @Environment(AppModel.self) private var appModel
+
+    var body: some View {
+        @Bindable var appModel = appModel
+        VStack(spacing: 0) {
+            HStack {
+                Picker("Profile", selection: $appModel.settingsProfileName) {
+                    ForEach(appModel.profileNames, id: \.self) { name in
+                        Text(name == appModel.defaultProfileName ? "\(name) (default)" : name).tag(name)
+                    }
+                }
+                .fixedSize()
+                .accessibilityIdentifier("settingsProfile")
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            Divider()
+            content()
+        }
+    }
+}
+
+// MARK: - Profiles
+
+private struct ProfilesSettings: View {
+    @Environment(AppModel.self) private var appModel
+    @State private var name = ""
+    @State private var error: String?
+    @State private var confirmDelete = false
+    @State private var importSource: URL?
+    @State private var importName = ""
+
+    var body: some View {
+        @Bindable var appModel = appModel
+        let selected = appModel.settingsProfileName
+        HStack(alignment: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                List(selection: Binding(get: { selected }, set: { if let new = $0 { appModel.settingsProfileName = new } })) {
+                    ForEach(appModel.profileNames, id: \.self) { profile in
+                        HStack {
+                            Text(profile)
+                            Spacer()
+                            if profile == appModel.defaultProfileName {
+                                Text("Default").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .tag(profile)
+                    }
+                }
+                .accessibilityIdentifier("profileList")
+                Divider()
+                HStack(spacing: 2) {
+                    Button { perform { appModel.settingsProfileName = try appModel.addProfile(copying: selected) } } label: {
+                        Image(systemName: "plus")
+                    }
+                    .help("Add a copy of the selected profile")
+                    .accessibilityIdentifier("addProfile")
+                    Button { confirmDelete = true } label: { Image(systemName: "minus") }
+                        .disabled(selected == appModel.defaultProfileName || appModel.profileNames.count < 2)
+                        .help("Delete the selected profile (not the default)")
+                        .accessibilityIdentifier("deleteProfile")
+                    Spacer()
+                    Button("Import…") { chooseImport() }
+                        .accessibilityIdentifier("importProfile")
+                }
+                .buttonStyle(.borderless)
+                .padding(6)
+            }
+            .frame(width: 220)
+            .background(.background)
+            Divider()
+            Form {
+                Section {
+                    TextField("Name", text: $name)
+                        .onSubmit { rename() }
+                        .accessibilityIdentifier("profileName")
+                    if let error {
+                        Text(error).foregroundStyle(.red).font(.callout)
+                            .accessibilityIdentifier("profileError")
+                    }
+                    LabeledContent("Default") {
+                        if selected == appModel.defaultProfileName {
+                            Text("New windows use this profile.")
+                        } else {
+                            Button("Set as Default") { perform { try appModel.setDefaultProfile(selected) } }
+                                .accessibilityIdentifier("setDefaultProfile")
+                        }
+                    }
+                }
+                Section("File") {
+                    Text(appModel.profileURL(selected).path)
+                        .font(.callout.monospaced())
+                        .textSelection(.enabled)
+                    HStack {
+                        Button("Show in Finder") { appModel.revealProfilesFolder() }
+                        Button("Reload All from Disk") { appModel.reloadProfiles() }
+                    }
+                }
+                Section {
+                    Text("Each window uses one profile: the default when it opens, or another chosen with "
+                         + "View ▸ Profile or in its status bar. The other tabs edit the profile chosen at their top.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .formStyle(.grouped)
+        }
+        .onAppear { name = selected }
+        .onChange(of: appModel.settingsProfileName) { _, new in name = new; error = nil }
+        .confirmationDialog("Delete the profile “\(selected)”?", isPresented: $confirmDelete) {
+            Button("Delete", role: .destructive) { perform { try appModel.deleteProfile(selected) } }
+        } message: {
+            Text("Its file is removed. Windows using it switch to the default profile.")
+        }
+        .alert("Import Profile", isPresented: Binding(get: { importSource != nil }, set: { if !$0 { importSource = nil } })) {
+            TextField("Name", text: $importName)
+            Button("Import") {
+                if let source = importSource {
+                    perform {
+                        try appModel.importProfile(from: source, named: importName)
+                        appModel.settingsProfileName = importName
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Name the new profile.")
+        }
+    }
+
+    private func rename() {
+        let old = appModel.settingsProfileName
+        guard name != old else { return }
+        perform { try appModel.renameProfile(old, to: name) }
+        if error != nil { name = old }
+    }
+
+    private func chooseImport() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.message = "Choose a configuration file to add as a profile."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        importName = url.deletingPathExtension().lastPathComponent
+        importSource = url
+    }
+
+    private func perform(_ action: () throws -> Void) {
+        do {
+            try action()
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 }
 
@@ -27,13 +195,14 @@ private struct GeneralSettings: View {
                     HStack {
                         TextField("", value: $appModel.settingsConfiguration.editor.fontSize, format: .number)
                             .frame(width: 60)
+                            .accessibilityIdentifier("fontSize")
                         Stepper("", value: $appModel.settingsConfiguration.editor.fontSize, in: EditorSettings.fontSizeRange, step: 1)
                             .labelsHidden()
                     }
                 }
                 Toggle("Use a monospaced font", isOn: $appModel.settingsConfiguration.editor.monospaced)
             }
-            Section("Configuration file") {
+            Section("Profile file") {
                 Text(appModel.profileURL(appModel.settingsProfileName).path)
                     .font(.callout.monospaced())
                     .textSelection(.enabled)
@@ -42,16 +211,17 @@ private struct GeneralSettings: View {
                     .foregroundStyle(.secondary)
                 HStack {
                     Button("Show in Finder") { appModel.revealProfilesFolder() }
-                    Button("Reload from Disk") { appModel.reloadProfiles() }
+                    Button("Reload All from Disk") { appModel.reloadProfiles() }
                     Button("Restore Defaults…") { confirmReset = true }
                 }
             }
         }
         .formStyle(.grouped)
-        .confirmationDialog("Restore all settings to their defaults?", isPresented: $confirmReset) {
+        .confirmationDialog("Restore profile “\(appModel.settingsProfileName)” to the defaults?",
+                            isPresented: $confirmReset) {
             Button("Restore Defaults", role: .destructive) { appModel.settingsConfiguration = .default }
         } message: {
-            Text("Preview renderers, AI providers and actions you added will be removed.")
+            Text("Preview renderers, AI providers and actions you added to this profile will be removed.")
         }
     }
 

@@ -52,10 +52,8 @@ class AaronUITestCase: XCTestCase {
         for (name, profile) in profiles {
             try JSONSerialization.data(withJSONObject: profile).write(to: profileURL(name))
         }
-        if let defaultProfile {
-            try JSONSerialization.data(withJSONObject: ["defaultProfile": defaultProfile])
-                .write(to: supportDirectory.appendingPathComponent("profiles.json"))
-        }
+        try JSONSerialization.data(withJSONObject: ["defaultProfile": defaultProfile ?? "Default"])
+            .write(to: supportDirectory.appendingPathComponent("profiles.json"))
 
         app = XCUIApplication()
         app.launchEnvironment["AARON_SUPPORT_DIR"] = supportDirectory.path
