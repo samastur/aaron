@@ -66,13 +66,6 @@ struct ConfigurationTests {
         #expect(PathExpansion.url("  ") == nil)
     }
 
-    @Test func environmentOverridesConfigLocation() {
-        let url = ConfigurationStore.defaultURL(environment: ["AARON_CONFIG_PATH": "/tmp/x.json"])
-        #expect(url.path == "/tmp/x.json")
-        let normal = ConfigurationStore.defaultURL(environment: [:])
-        #expect(normal.path.hasSuffix("Library/Application Support/Aaron/config.json"))
-    }
-
     @Test func lookupHelpers() {
         let config = Configuration.default
         let action = config.aiActions[0]

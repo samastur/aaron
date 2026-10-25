@@ -285,16 +285,6 @@ public enum PathExpansion {
 }
 
 public enum ConfigurationStore {
-    public static let environmentKey = "AARON_CONFIG_PATH"
-
-    public static func defaultURL(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL {
-        if let override = environment[environmentKey], !override.isEmpty {
-            return URL(fileURLWithPath: PathExpansion.expand(override))
-        }
-        return URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("Library/Application Support/Aaron/config.json")
-    }
-
     /// Loads the configuration; a missing file gives the defaults.
     public static func load(from url: URL) throws -> Configuration {
         guard FileManager.default.fileExists(atPath: url.path) else { return .default }
