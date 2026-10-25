@@ -159,9 +159,12 @@ aaron --help
   hands a request to the wrong copy and two running copies never write the
   same profile files. The Release build keeps `net.gaivo.Aaron` and
   `Aaron/`, where the migration of the existing `config.json` happens.
-- **Only the command may choose a profile** *(Claude's call)*. Opening a file
-  must not be a way for a web page or another app to run a profile's
-  commands on a file of its choosing. If a URL scheme is used, requests must
+- **Only the `aaron` command can open files from outside Aaron with a
+  chosen profile** *(Claude's call)*; switching in the window is not
+  affected. A registered URL scheme can be triggered by any web page or
+  app, and opening a file runs its profile's commands (preview renderers,
+  tag and plugins commands), so the channel must not let them open a file
+  of their choosing without the user doing anything. If a URL scheme is used, requests must
   carry a random token that Aaron writes, readable only by the user, to its
   support folder (`cli-token`, mode 0600) and the script reads; requests
   without the right token are ignored and logged.
