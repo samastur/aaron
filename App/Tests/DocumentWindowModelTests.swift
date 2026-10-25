@@ -121,4 +121,96 @@ final class DocumentWindowModelTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(800))
         XCTAssertEqual(try String(contentsOf: counter, encoding: .utf8), "x\n")
     }
+
+    // MARK: - Profiles
+
+    /// An app with profiles A (external renderer for Pelican posts) and B
+    /// (never Pelican, no renderers).
+    func twoProfileApp() throws -> AppModel {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
+        let store = ProfileStore(directory: directory)
+        var a = Configuration.default
+        a.previewRenderers = [PreviewRendererConfig(id: "external", name: "External", command: "cat")]
+        a.defaultRenderer.pelican = "external"
+        var b = Configuration.default
+        b.pelican.detection = .never
+        try store.save(a, as: "A")
+        try store.save(b, as: "B")
+        try store.setDefaultProfile("A")
+        return AppModel(store: store)
+    }
+
+    let pelicanPost = "Title: T\nTags: x\n\nBody\n"
+
+    func testWindowStartsWithDefaultProfile() throws {
+        let app = try twoProfileApp()
+        let model = DocumentWindowModel(appModel: app)
+        XCTAssertEqual(model.profileName, "A")
+        XCTAssertEqual(DocumentWindowModel(appModel: app, profileName: "B").profileName, "B")
+    }
+
+    func testSwitchingProfileChangesRendererAndDetection() throws {
+        let app = try twoProfileApp()
+        let model = DocumentWindowModel(appModel: app)
+        model.documentOpened(text: pelicanPost, fileURL: nil)
+        XCTAssertTrue(model.isPelican)
+        XCTAssertEqual(model.rendererID, "external")
+        model.profileName = "B"
+        XCTAssertFalse(model.isPelican)
+        XCTAssertEqual(model.rendererID, PreviewRendererConfig.builtinID)
+        XCTAssertEqual(model.configuration.pelican.detection, .never)
+    }
+
+    func testSwitchingKeepsSuggestions() async throws {
+        let (model, _, _) = try await reviewedModel("The cat saw teh fox.", suggestions:
+            #"{"suggestions": [{"original": "teh", "replacement": "the", "message": "typo"}]}"#)
+        XCTAssertEqual(model.session.suggestions.count, 1)
+        let name = try model.appModel.addProfile(copying: model.profileName)
+        model.profileName = name
+        XCTAssertEqual(model.session.suggestions.count, 1)
+    }
+
+    func testEditingOtherProfileDoesNotTouchWindow() throws {
+        let app = try twoProfileApp()
+        let model = DocumentWindowModel(appModel: app)
+        app.register(model)
+        model.documentOpened(text: pelicanPost, fileURL: nil)
+        var b = app.configuration(for: "B")
+        b.previewRenderers = []
+        b.pelican.detection = .always
+        app.setConfiguration(b, for: "B")
+        XCTAssertEqual(model.rendererID, "external")
+        XCTAssertTrue(model.isPelican)
+    }
+
+    func testEditingOwnProfileRefreshesWindow() throws {
+        let app = try twoProfileApp()
+        let model = DocumentWindowModel(appModel: app)
+        app.register(model)
+        model.documentOpened(text: pelicanPost, fileURL: nil)
+        var a = app.configuration(for: "A")
+        a.previewRenderers = []
+        app.setConfiguration(a, for: "A")
+        XCTAssertEqual(model.rendererID, PreviewRendererConfig.builtinID)
+    }
+
+    func testRenamingProfileKeepsWindowOnIt() throws {
+        let app = try twoProfileApp()
+        let model = DocumentWindowModel(appModel: app, profileName: "B")
+        app.register(model)
+        try app.renameProfile("B", to: "Plain")
+        XCTAssertEqual(model.profileName, "Plain")
+        XCTAssertEqual(model.configuration.pelican.detection, .never)
+    }
+
+    func testDeletingProfileMovesItsWindowsToDefault() throws {
+        let app = try twoProfileApp()
+        let model = DocumentWindowModel(appModel: app, profileName: "B")
+        app.register(model)
+        model.documentOpened(text: pelicanPost, fileURL: nil)
+        XCTAssertFalse(model.isPelican)
+        try app.deleteProfile("B")
+        XCTAssertEqual(model.profileName, "A")
+        XCTAssertTrue(model.isPelican)
+    }
 }

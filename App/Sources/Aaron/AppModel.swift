@@ -30,6 +30,7 @@ final class AppModel {
     private var unreadable: Set<String> = []
 
     @ObservationIgnored private var saveTasks: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var windowRefs: [WeakWindow] = []
     @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 
     init(store: ProfileStore) {
@@ -63,6 +64,9 @@ final class AppModel {
         guard let old = profiles[name], old != configuration else { return }
         profiles[name] = configuration
         scheduleSave(name)
+        for window in windows where window.profileName == name {
+            window.configurationChanged(from: old)
+        }
     }
 
     /// The profile selected in Settings, for its bindings.
@@ -206,9 +210,38 @@ final class AppModel {
         }
     }
 
-    // MARK: - Windows (filled in with per-window profiles)
+    // MARK: - Windows
 
-    private func profileRenamed(_ old: String, to new: String) {}
-    private func profileDeleted(_ name: String, configuration: Configuration) {}
-    private func profilesReloaded(from old: [String: Configuration]) {}
+    /// Document windows, so they follow changes to their profile.
+    func register(_ window: DocumentWindowModel) {
+        windowRefs.removeAll { $0.window == nil || $0.window === window }
+        windowRefs.append(WeakWindow(window: window))
+    }
+
+    var windows: [DocumentWindowModel] { windowRefs.compactMap(\.window) }
+
+    private func profileRenamed(_ old: String, to new: String) {
+        for window in windows where window.profileName == old { window.profileRenamed(to: new) }
+    }
+
+    private func profileDeleted(_ name: String, configuration: Configuration) {
+        for window in windows where window.profileName == name {
+            window.switchProfile(to: defaultProfileName, previous: configuration)
+        }
+    }
+
+    private func profilesReloaded(from old: [String: Configuration]) {
+        for window in windows {
+            let previous = old[window.profileName] ?? .default
+            if profiles[window.profileName] == nil {
+                window.switchProfile(to: defaultProfileName, previous: previous)
+            } else {
+                window.configurationChanged(from: previous)
+            }
+        }
+    }
+}
+
+private struct WeakWindow {
+    weak var window: DocumentWindowModel?
 }

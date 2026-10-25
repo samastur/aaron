@@ -19,6 +19,7 @@ struct DocumentWindow: View {
         .onAppear {
             if model == nil {
                 let created = DocumentWindowModel(appModel: appModel)
+                appModel.register(created)
                 created.documentOpened(text: document.text, fileURL: fileURL)
                 model = created
                 #if DEBUG
@@ -28,7 +29,6 @@ struct DocumentWindow: View {
         }
         .onChange(of: fileURL) { _, url in model?.fileURLChanged(url) }
         .onChange(of: document.text) { _, text in model?.textChanged(text) }
-        .onChange(of: model?.configuration) { old, _ in if let old { model?.configurationChanged(from: old) } }
     }
 }
 
@@ -36,6 +36,7 @@ private struct DocumentContent: View {
     @Binding var document: MarkdownDocument
     @Bindable var model: DocumentWindowModel
     @Environment(AppModel.self) private var appModel
+    @Environment(\.appearsActive) private var appearsActive
 
     var body: some View {
         VStack(spacing: 0) {
@@ -72,6 +73,13 @@ private struct DocumentContent: View {
             }
         }
         .focusedSceneValue(\.windowModel, model)
+        // Settings opens on the profile of the window last in front.
+        .onChange(of: appearsActive, initial: true) { _, active in
+            if active { appModel.frontProfileName = model.profileName }
+        }
+        .onChange(of: model.profileName) { _, name in
+            if appearsActive { appModel.frontProfileName = name }
+        }
         .alert("Settings problem", isPresented: Binding(
             get: { appModel.configurationError != nil },
             set: { if !$0 { appModel.configurationError = nil } })) {

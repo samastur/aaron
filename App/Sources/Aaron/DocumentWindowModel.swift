@@ -54,11 +54,37 @@ final class DocumentWindowModel {
     @ObservationIgnored private var actionRunID = UUID()
     @ObservationIgnored private var tagTask: Task<Void, Never>?
 
-    init(appModel: AppModel) {
+    /// The profile whose settings this window uses.
+    var profileName: String {
+        didSet {
+            guard profileName != oldValue, !followingRename else { return }
+            configurationChanged(from: appModel.configuration(for: oldValue))
+        }
+    }
+    @ObservationIgnored private var followingRename = false
+
+    init(appModel: AppModel, profileName: String? = nil) {
         self.appModel = appModel
+        self.profileName = profileName ?? appModel.defaultProfileName
     }
 
-    var configuration: Configuration { appModel.configuration(for: appModel.defaultProfileName) }
+    var configuration: Configuration { appModel.configuration(for: profileName) }
+
+    /// The profile was renamed; its settings are unchanged.
+    func profileRenamed(to name: String) {
+        followingRename = true
+        profileName = name
+        followingRename = false
+    }
+
+    /// Moves to another profile when the previous one's settings are no
+    /// longer available, e.g. because it was deleted.
+    func switchProfile(to name: String, previous: Configuration) {
+        followingRename = true
+        profileName = name
+        followingRename = false
+        configurationChanged(from: previous)
+    }
 
     var availableRenderers: [(id: String, name: String)] {
         [(PreviewRendererConfig.builtinID, "Markdown (built-in)")]

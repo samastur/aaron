@@ -94,7 +94,7 @@ private struct MarkdownHelpButton: View {
                 isPelican: window?.isPelican
                     ?? (appModel.configuration(for: appModel.defaultProfileName).pelican.detection == .always),
                 fileURL: window?.fileURL,
-                profileName: appModel.defaultProfileName)
+                profileName: window?.profileName ?? appModel.defaultProfileName)
             openWindow(id: HelpView.windowID)
         }
         // ⌘? is taken by the Help menu's search field.
