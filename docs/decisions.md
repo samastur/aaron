@@ -186,3 +186,11 @@ Each one can be revisited.
     committed, rather than rendered at build time: builds stay
     reproducible without `rsvg-convert` or the SVG's fonts. Debug and
     Release builds share the icon.
+55. **Preview assets must resolve inside their folder**, after following
+    symbolic links. A link inside the folder pointing out of it is refused,
+    even though someone may have made it on purpose (a theme folder linked
+    from elsewhere): the alternative lets any document read files above its
+    folder. Map the linked folder as an asset folder instead.
+56. **The preview reloads after every finished render**, not only when the
+    HTML changes, so Refresh Preview reads images and stylesheets again,
+    e.g. after saving a new document next to its images.

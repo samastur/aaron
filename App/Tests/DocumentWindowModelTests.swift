@@ -122,6 +122,25 @@ final class DocumentWindowModelTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: counter, encoding: .utf8), "x\n")
     }
 
+    func testRefreshReloadsEvenWhenHTMLIsUnchanged() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
+        let model = DocumentWindowModel(appModel: AppModel(store: ProfileStore(directory: directory)))
+        model.showPreview = true
+        model.documentOpened(text: "![x](x.png)", fileURL: nil)
+        try await waitForPreview(model)
+        let revision = model.previewRevision
+        model.refreshPreview(immediately: true)
+        try await waitForPreview(model)
+        XCTAssertGreaterThan(model.previewRevision, revision)
+    }
+
+    func waitForPreview(_ model: DocumentWindowModel) async throws {
+        let deadline = Date().addingTimeInterval(10)
+        while (model.isPreviewPending || model.previewHTML == nil) && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+    }
+
     // MARK: - Profiles
 
     /// An app with profiles A (external renderer for Pelican posts) and B
@@ -212,5 +231,38 @@ final class DocumentWindowModelTests: XCTestCase {
         try app.deleteProfile("B")
         XCTAssertEqual(model.profileName, "A")
         XCTAssertTrue(model.isPelican)
+    }
+
+    /// Profiles A and B both treat the text as a Pelican post; only A lists tags.
+    func tagProfiles(tagsCommand: String) throws -> AppModel {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
+        let store = ProfileStore(directory: directory)
+        var a = Configuration.default
+        a.pelican.tagsCommand = tagsCommand
+        try store.save(a, as: "A")
+        try store.save(.default, as: "B")
+        try store.setDefaultProfile("A")
+        return AppModel(store: store)
+    }
+
+    func testSwitchingToProfileWithoutTagsClearsTags() async throws {
+        let app = try tagProfiles(tagsCommand: "echo blogtag")
+        let model = DocumentWindowModel(appModel: app)
+        model.documentOpened(text: pelicanPost, fileURL: nil)
+        let deadline = Date().addingTimeInterval(10)
+        while model.tags.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(50)) }
+        XCTAssertEqual(model.tags.map(\.name), ["blogtag"])
+        model.profileName = "B"
+        XCTAssertTrue(model.isPelican)
+        XCTAssertEqual(model.tags, [])
+    }
+
+    func testTagsStillLoadingAreDroppedAfterSwitching() async throws {
+        let app = try tagProfiles(tagsCommand: "sleep 0.5; echo blogtag")
+        let model = DocumentWindowModel(appModel: app)
+        model.documentOpened(text: pelicanPost, fileURL: nil)
+        model.profileName = "B"
+        try await Task.sleep(for: .milliseconds(1500))
+        XCTAssertEqual(model.tags, [])
     }
 }

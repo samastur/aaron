@@ -106,7 +106,8 @@ where those files are on disk: the **URL prefix** `/articles/` with the
 
 Mappings are tried in order. URLs that match no mapping (or whose file does
 not exist) are looked up in the document's folder. URLs that try to escape a
-folder with `..` are refused.
+folder with `..` are refused, and so are symbolic links that lead out of it;
+links to other places inside the folder work.
 
 ### JavaScript
 

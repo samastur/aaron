@@ -26,6 +26,8 @@ final class DocumentWindowModel {
         didSet { if rendererID != oldValue { refreshPreview(immediately: true) } }
     }
     private(set) var previewHTML: String?
+    /// Counts finished renders, so the preview reloads even when the HTML is the same.
+    private(set) var previewRevision = 0
     private(set) var previewError: String?
     private(set) var isRenderingPreview = false
     /// A render is scheduled or running.
@@ -182,6 +184,7 @@ final class DocumentWindowModel {
                 let html = try await renderer.render(request)
                 guard !Task.isCancelled, let self else { return }
                 self.previewHTML = html
+                self.previewRevision += 1
                 self.previewError = nil
             } catch is CancellationError {
                 return
@@ -374,7 +377,15 @@ final class DocumentWindowModel {
 
     func loadTagsIfNeeded(refresh: Bool = false) {
         let pelican = configuration.pelican
-        guard isPelican, !pelican.tagsCommand.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard isPelican, !pelican.tagsCommand.trimmingCharacters(in: .whitespaces).isEmpty else {
+            // Don't keep offering tags from another profile's blog.
+            tagTask?.cancel()
+            tagTask = nil
+            tagsLoadedFor = nil
+            tags = []
+            tagError = nil
+            return
+        }
         let context = CommandContext(fileURL: fileURL, baseDirectory: nil, temporaryFileURL: nil)
         let command = CommandTemplate.expand(pelican.tagsCommand, context: context)
         let directory = PathExpansion.url(pelican.tagsWorkingDirectory) ?? existingDocumentDirectory
@@ -387,11 +398,13 @@ final class DocumentWindowModel {
             do {
                 let tags = try await provider.tags(command: command, workingDirectory: directory,
                                                    timeout: .seconds(pelican.tagsTimeoutSeconds), refresh: refresh)
+                guard !Task.isCancelled else { return }
                 self?.tags = tags
                 self?.tagError = nil
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
                 self?.tagError = error.localizedDescription
                 self?.tagsLoadedFor = nil
             }

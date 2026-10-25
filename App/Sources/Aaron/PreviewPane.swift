@@ -35,8 +35,8 @@ struct PreviewPane: View {
             .padding(.vertical, 6)
             Divider()
             ZStack(alignment: .top) {
-                PreviewWebView(html: model.previewHTML ?? "", resolver: model.assetResolver,
-                               allowsJavaScript: model.previewAllowsJavaScript)
+                PreviewWebView(html: model.previewHTML ?? "", revision: model.previewRevision,
+                               resolver: model.assetResolver, allowsJavaScript: model.previewAllowsJavaScript)
                     .accessibilityIdentifier("preview")
                 if let error = model.previewError {
                     PreviewErrorBanner(message: error)
@@ -78,6 +78,9 @@ struct PreviewWebView: NSViewRepresentable {
     static let pagePath = "/__aaron_preview__.html"
 
     let html: String
+    /// A new value reloads the page even when `html` is the same, so its
+    /// assets are read again.
+    var revision = 0
     let resolver: PreviewAssetResolver
     let allowsJavaScript: Bool
 
@@ -98,13 +101,10 @@ struct PreviewWebView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {
         let coordinator = context.coordinator
         coordinator.schemeHandler.resolver = resolver
-        if coordinator.allowsJavaScript != allowsJavaScript {
-            coordinator.allowsJavaScript = allowsJavaScript
-            coordinator.schemeHandler.html = html
-            coordinator.reload()
-            return
-        }
-        guard coordinator.schemeHandler.html != html else { return }
+        guard coordinator.allowsJavaScript != allowsJavaScript || coordinator.revision != revision
+              || coordinator.schemeHandler.html != html else { return }
+        coordinator.allowsJavaScript = allowsJavaScript
+        coordinator.revision = revision
         coordinator.schemeHandler.html = html
         coordinator.reload()
     }
@@ -114,6 +114,7 @@ struct PreviewWebView: NSViewRepresentable {
         let schemeHandler = PreviewSchemeHandler()
         weak var webView: WKWebView?
         var allowsJavaScript = false
+        var revision = 0
         private var savedScroll: (x: Double, y: Double)?
         private var generation = 0
 
@@ -175,7 +176,7 @@ final class PreviewSchemeHandler: NSObject, WKURLSchemeHandler {
         if url.path == PreviewWebView.pagePath {
             data = Data(html.utf8)
             mimeType = "text/html"
-        } else if let file = resolver.fileURL(forPath: url.path), let contents = try? Data(contentsOf: file) {
+        } else if let file = resolver.fileURL(for: url), let contents = try? Data(contentsOf: file) {
             data = contents
             mimeType = PreviewAssetResolver.mimeType(for: file)
         } else {

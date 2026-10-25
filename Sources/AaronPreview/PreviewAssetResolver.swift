@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 /// Maps paths requested by the preview page to local files: configured URL
 /// prefixes first, then the document's directory. Paths escaping the target
-/// directory are rejected.
+/// directory, also through symbolic links, are rejected.
 public struct PreviewAssetResolver: Sendable {
     public var mappings: [AssetMapping]
     public var documentDirectory: URL?
@@ -12,6 +12,11 @@ public struct PreviewAssetResolver: Sendable {
     public init(mappings: [AssetMapping], documentDirectory: URL?) {
         self.mappings = mappings
         self.documentDirectory = documentDirectory
+    }
+
+    /// The file a request to the preview's URL scheme asks for.
+    public func fileURL(for url: URL) -> URL? {
+        fileURL(forPath: url.path(percentEncoded: true))
     }
 
     /// `path` is the URL's (percent-encoded) path, e.g. `/articles/theme/x.css`.
@@ -42,6 +47,10 @@ public struct PreviewAssetResolver: Sendable {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: candidate.path, isDirectory: &isDirectory),
               !isDirectory.boolValue else { return nil }
+        // Links may point anywhere inside the folder, but not out of it.
+        let root = base.resolvingSymlinksInPath().standardizedFileURL.path
+        let resolved = candidate.resolvingSymlinksInPath().standardizedFileURL.path
+        guard resolved.hasPrefix(root.hasSuffix("/") ? root : root + "/") else { return nil }
         return candidate
     }
 

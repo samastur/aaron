@@ -57,6 +57,32 @@ struct PreviewAssetResolverTests {
         }
     }
 
+    @Test func rejectsSymlinkLeadingOutOfFolder() throws {
+        // content/link → .. would otherwise reach output/ through the
+        // document folder.
+        try FileManager.default.createSymbolicLink(
+            atPath: root.appendingPathComponent("content/link").path, withDestinationPath: "..")
+        #expect(resolver.fileURL(forPath: "/link/output/theme/site.css") == nil)
+        let mapped = root.appendingPathComponent("output/theme/escape")
+        try FileManager.default.createSymbolicLink(
+            atPath: mapped.path, withDestinationPath: root.appendingPathComponent("content").path)
+        #expect(resolver.fileURL(forPath: "/articles/theme/escape/images/a%20b.png") == nil)
+    }
+
+    @Test func followsSymlinkInsideFolder() throws {
+        try FileManager.default.createSymbolicLink(
+            atPath: root.appendingPathComponent("content/pictures").path, withDestinationPath: "images")
+        #expect(resolver.fileURL(forPath: "/pictures/a%20b.png")?.lastPathComponent == "a b.png")
+    }
+
+    @Test func decodesRequestURLOnce() throws {
+        try Data("literal".utf8).write(to: root.appendingPathComponent("content/a%20b.png"))
+        let literal = try #require(URL(string: "aaron-preview://preview/a%2520b.png"))
+        #expect(resolver.fileURL(for: literal).map { try? String(contentsOf: $0, encoding: .utf8) } == "literal")
+        let spaced = try #require(URL(string: "aaron-preview://preview/images/a%20b.png"))
+        #expect(resolver.fileURL(for: spaced)?.lastPathComponent == "a b.png")
+    }
+
     @Test func mimeTypes() {
         #expect(PreviewAssetResolver.mimeType(for: URL(fileURLWithPath: "/a.css")) == "text/css")
         #expect(PreviewAssetResolver.mimeType(for: URL(fileURLWithPath: "/a.png")) == "image/png")
