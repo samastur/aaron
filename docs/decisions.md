@@ -182,3 +182,7 @@ Each one can be revisited.
 53. **Smoke tests open files in the background** (`AARON_OPEN_IN_BACKGROUND`,
     honoured by the script, set only by the harness), so they never take
     focus from the person at the Mac.
+54. **The app icon is pre-rendered from the SVG** into an asset catalog and
+    committed, rather than rendered at build time: builds stay
+    reproducible without `rsvg-convert` or the SVG's fonts. Debug and
+    Release builds share the icon.

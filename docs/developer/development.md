@@ -87,3 +87,11 @@ tried in the running app. Details in [testing.md](testing.md).
   same change.
 - Commit messages: a summary line, a blank line, and a body explaining what
   and why.
+
+## App icon
+
+The icon's source is `App/Icon/aaron.svg`. `scripts/make-icon.sh` renders
+it (with `rsvg-convert`, from Homebrew's `librsvg`) into
+`App/Sources/Aaron/Assets.xcassets/AppIcon.appiconset`. The PNGs are
+committed, so building needs neither the tool nor the fonts the SVG uses.
+Rerun the script after changing the SVG.

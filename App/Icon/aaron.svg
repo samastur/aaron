@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#F6F3EA"/><stop offset="1" stop-color="#E4DFD2"/>
+    </linearGradient>
+    <linearGradient id="curl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#E9E5DA"/><stop offset="1" stop-color="#BDB6A6"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="-22" x2="0" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#05060A"/><stop offset=".22" stop-color="#5B1E24"/><stop offset=".34" stop-color="#C46A6F"/>
+      <stop offset=".48" stop-color="#6E1F27"/><stop offset=".85" stop-color="#2A0A0E"/><stop offset="1" stop-color="#05060A"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="-22" x2="0" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6B4E12"/><stop offset=".3" stop-color="#FBE7A1"/><stop offset=".55" stop-color="#C9962E"/><stop offset="1" stop-color="#5C410C"/>
+    </linearGradient>
+    <linearGradient id="black" x1="0" y1="-24" x2="0" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000"/><stop offset=".3" stop-color="#55575E"/><stop offset=".5" stop-color="#1A1B1F"/><stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset=".25" stop-color="#9AA0A8"/><stop offset=".5" stop-color="#F2F4F6"/>
+      <stop offset=".75" stop-color="#6D737C"/><stop offset="1" stop-color="#D5D9DE"/>
+    </linearGradient>
+    <radialGradient id="glass" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".0"/><stop offset=".85" stop-color="#9FC3E0" stop-opacity=".18"/><stop offset="1" stop-color="#5E8DB5" stop-opacity=".35"/>
+    </radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="tight" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+        <clipPath id="pageclip"><path id="pageshape" d="M0 0 H560 V600 L440 720 H0 Z"/></clipPath>
+
+    <!-- raw markdown content, page coordinates -->
+    <g id="raw" font-family="DejaVu Sans Mono" font-size="25" fill="#4B4F57">
+      <text x="40" y="82" font-size="34" fill="#2C3E66"># Open Access</text>
+      <text x="40" y="150">Information is not</text>
+      <text x="40" y="186">a scarce resource.</text>
+      <text x="40" y="222">Share it. Link it.</text>
+      <text x="40" y="290" fill="#2C3E66">- </text><text x="76" y="290">read widely</text>
+      <text x="40" y="326" fill="#2C3E66">- </text><text x="76" y="326">write plainly</text>
+      <text x="40" y="362" fill="#2C3E66">- </text><text x="76" y="362">publish freely</text>
+      <text x="40" y="430">Knowledge grows when</text>
+      <text x="40" y="466">it is recieved and</text>
+      <text x="40" y="502">passed along.</text>
+      <text x="40" y="560" fill="#2C3E66">**</text><text x="76" y="560">Information</text>
+      <text x="40" y="596">is power.</text><text x="190" y="596" fill="#2C3E66">**</text>
+      <text x="40" y="654">[link](http://...)</text>
+    </g>
+<filter id="tileshadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity=".3"/></filter>
+<clipPath id="sq"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8A5A36"/><stop offset=".5" stop-color="#6B4127"/><stop offset="1" stop-color="#4A2B18"/></linearGradient>
+<filter id="grain" x="0" y="0" width="100%" height="100%">
+  <feTurbulence type="fractalNoise" baseFrequency="0.0035 0.09" numOctaves="3" seed="7"/>
+  <feColorMatrix values="0 0 0 0 0.18  0 0 0 0 0.09  0 0 0 0 0.04  0 0 0 1.6 -0.55"/>
+  <feComposite in2="SourceGraphic" operator="in"/>
+</filter>
+<linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient>
+</defs>
+<g filter="url(#tileshadow)"><rect x="100" y="100" width="824" height="824" rx="185" fill="url(#wood)"/></g>
+<g clip-path="url(#sq)">
+  <g transform="rotate(-8 512 512)"><rect x="0" y="0" width="1024" height="1024" fill="#fff" filter="url(#grain)"/></g>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+  <g transform="translate(512 520) scale(.86) translate(-512 -512)"><g id="scene" transform="translate(-75 25)">
+
+  <!-- page shadow -->
+  <g transform="matrix(0.94 -0.17 0.30 0.86 222 250)" opacity=".45">
+    <use xlink:href="#pageshape" fill="#000" filter="url(#soft)"/>
+  </g>
+
+  <!-- page -->
+  <g transform="matrix(0.94 -0.17 0.30 0.86 210 230)">
+    <use xlink:href="#pageshape" fill="url(#paper)"/>
+    <g clip-path="url(#pageclip)"><use xlink:href="#raw"/></g>
+    <!-- AI suggestion in violet ink: wavy underline + margin sparkle -->
+    <path d="M216 476 q9 -10 18 0 t18 0 t18 0 t18 0 t18 0 t18 0 t18 0" fill="none" stroke="#7B4BE8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M500 420 Q505 452 536 458 Q505 464 500 496 Q495 464 464 458 Q495 452 500 420 Z" fill="#7B4BE8"/>
+    <path d="M478 500 Q485 515 470 524" fill="none" stroke="#7B4BE8" stroke-width="4" stroke-linecap="round"/>
+    <!-- folded corner -->
+    <path d="M560 600 L440 720 L470 600 Z" fill="#000" opacity=".18" filter="url(#tight)"/>
+    <path d="M560 600 Q505 618 452 606 Q462 665 440 720 Z" fill="url(#curl)"/>
+    <path d="M560 600 Q505 618 452 606 Q462 665 440 720" fill="none" stroke="#A8A08E" stroke-width="1.5"/>
+  </g>
+
+  <!-- pen shadow -->
+  <g transform="translate(628 505) rotate(-48.6)" opacity=".4" filter="url(#tight)">
+    <path d="M0 0 L80 -16 H520 Q545 -18 545 0 Q545 18 520 16 H80 Z" fill="#000"/>
+  </g>
+  <!-- fountain pen -->
+  <g transform="translate(600 470) rotate(-48.6)">
+    <path d="M0 0 L82 -17 L82 17 Z" fill="url(#gold)"/>
+    <line x1="10" y1="0" x2="60" y2="0" stroke="#4A3509" stroke-width="2"/>
+    <circle cx="62" cy="0" r="3.5" fill="#4A3509"/>
+    <rect x="80" y="-18" width="90" height="36" rx="4" fill="url(#black)"/>
+    <rect x="166" y="-21" width="16" height="42" fill="url(#gold)"/>
+    <path d="M180 -22 H515 Q545 -22 545 0 Q545 22 515 22 H180 Z" fill="url(#body)"/>
+    <rect x="300" y="-23" width="10" height="46" fill="url(#gold)"/>
+    <rect x="318" y="-23" width="10" height="46" fill="url(#gold)"/>
+    <path d="M330 -27 H470 Q478 -27 478 -20 V-16 H330 Z" fill="url(#gold)"/>
+  </g>
+
+</g>
+</g>
+</g>
+<rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3"/>
+</svg>
