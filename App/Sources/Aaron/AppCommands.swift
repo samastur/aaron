@@ -7,6 +7,12 @@ struct AppCommands: Commands {
     @FocusedValue(\.windowModel) private var window
 
     var body: some Commands {
+        CommandGroup(after: .appSettings) {
+            Button("Install Command Line Tool…") {
+                Task { await CommandLineToolInstall.run() }
+            }
+        }
+
         CommandGroup(after: .newItem) {
             NewPelicanPostButton(template: appModel.configuration(for: appModel.defaultProfileName).pelican.newPostTemplate)
         }

@@ -31,6 +31,8 @@ for name in $scenarios; do
   document=$SMOKE/story.md
   [[ -f $SMOKE/$name.md ]] && document=$SMOKE/$name.md
   cp $document $work/
+  # Extra files for a scenario: App/SmokeTests/<name>.files/*
+  [[ -d $SMOKE/$name.files ]] && cp -R $SMOKE/$name.files/. $work/
   AARON_SUPPORT_DIR=$work/support WORK=$work AARON_DEBUG_SCRIPT=$SMOKE/$name.json AARON_SNAPSHOT_DIR=$work/out \
     timeout 120 $APP $work/${document:t} -ApplePersistenceIgnoreState YES > $work/app.log 2>&1
   if [[ -f $work/out/result.txt ]] && [[ $(head -1 $work/out/result.txt) == PASS ]]; then

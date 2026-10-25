@@ -28,6 +28,9 @@ enum DebugHarness {
         var renderer: String?
         /// Switch the window to this profile.
         var profile: String?
+        /// Run the bundled `aaron` command with these arguments; `$WORK` is
+        /// replaced by the smoke test's work folder.
+        var cli: [String]?
         var preview: Bool?
         var review: Bool?
         var snapshot: String?
@@ -157,6 +160,7 @@ enum DebugHarness {
         }
         if let renderer = step.renderer { model.rendererID = renderer }
         if let profile = step.profile { model.profileName = profile }
+        if let arguments = step.cli { await runCommand(arguments) }
         if let preview = step.preview { model.showPreview = preview }
 
         if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
@@ -182,6 +186,33 @@ enum DebugHarness {
                 ?? (failures.isEmpty ? "PASS\n" : "FAIL\n" + failures.joined(separator: "\n") + "\n")
             try? Data(result.utf8).write(to: output.appendingPathComponent("result.txt"))
             NSApp.terminate(nil)
+        }
+    }
+
+    private static func runCommand(_ arguments: [String]) async {
+        guard let script = Bundle.main.url(forResource: "aaron", withExtension: nil) else {
+            failures.append("the aaron command is not in the app bundle")
+            return
+        }
+        let work = ProcessInfo.processInfo.environment["WORK"] ?? ""
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = [script.path] + arguments.map { $0.replacingOccurrences(of: "$WORK", with: work) }
+        process.environment = ProcessInfo.processInfo.environment.merging(["AARON_OPEN_IN_BACKGROUND": "1"]) { _, new in new }
+        let errors = Pipe()
+        process.standardError = errors
+        // Not waitUntilExit: the app must keep handling events, including
+        // the request the command sends.
+        let status: Int32 = await withCheckedContinuation { continuation in
+            process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
+            do { try process.run() } catch {
+                process.terminationHandler = nil
+                continuation.resume(returning: -1)
+            }
+        }
+        if status != 0 {
+            let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            failures.append("aaron \(arguments) exited with \(status): \(message)")
         }
     }
 

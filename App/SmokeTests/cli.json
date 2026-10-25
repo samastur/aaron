@@ -1,0 +1,18 @@
+[
+ {
+  "wait": 2.0,
+  "waitIdle": true,
+  "expect": {"windowCount": 1, "profile": "Default"}
+ },
+ {
+  "cli": ["--profile", "plain", "$WORK/second.md"],
+  "wait": 3.0,
+  "expect": {"windowCount": 2, "windowProfiles": {"second.md": "Plain", "story.md": "Default"}}
+ },
+ {
+  "cli": ["--profile", "Plain", "$WORK/story.md"],
+  "wait": 2.0,
+  "expect": {"windowCount": 2, "profile": "Plain", "windowProfiles": {"story.md": "Plain", "second.md": "Plain"}},
+  "quit": true
+ }
+]

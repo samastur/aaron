@@ -101,5 +101,6 @@ for p in $paths; do url+="&path=$(encode "$p")"; done
 if [[ -n ${AARON_CLI_DRY_RUN:-} ]]; then
   print -r -- $url
 else
-  /usr/bin/open -a "$app" "$url"
+  # AARON_OPEN_IN_BACKGROUND (tests only): don't bring Aaron to the front.
+  /usr/bin/open ${AARON_OPEN_IN_BACKGROUND:+-g} -a "$app" "$url"
 fi
