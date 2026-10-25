@@ -11,7 +11,7 @@ Modified: 2026-10-25 09:00
 Category: Writing
 Tags: writing, blogging
 Slug: my-post
-Authors: Marko Samastur
+Authors: Jane Doe
 Summary: One or two sentences shown in lists and feeds.
 Status: draft
 ```
@@ -42,7 +42,7 @@ Pelican rewrites these when it builds the site:
 | `![alt]({attach}photo.jpg)` | a file next to this post, copied next to the post's output |
 | `[text]({tag}python)` | a tag page |
 | `[text]({category}writing)` | a category page |
-| `[text]({author}marko-samastur)` | an author page |
+| `[text]({author}jane-doe)` | an author page |
 | `[text]({index})` | the site's index page |
 
 Aaron's built-in preview does not resolve these; use a Pelican renderer for

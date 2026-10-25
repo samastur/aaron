@@ -5,16 +5,15 @@ were decided while writing this down and can be changed.
 
 ## Why
 
-The user writes both plain Markdown and posts for a Pelican blog
-(Blog). Today Aaron has exactly one configuration
+The user writes both plain Markdown and posts for a Pelican blog. Today Aaron has exactly one configuration
 (`~/Library/Application Support/Aaron/config.json`), so using the blog setup
 means either living with it for every document or starting Aaron with
 `AARON_CONFIG_PATH`. The user wants:
 
 1. **Profiles**: several named configurations, for example *Plain* and
    *Blog*, one of them the default, switchable per open window.
-2. **An `aaron` command**, so the blog's `the draft script` (which today runs
-   `another editor <file>`) can open a newly created draft in Aaron, with the blog
+2. **An `aaron` command**, so the blog's script that creates a new draft
+   (which today opens it in another editor) can open a newly created draft in Aaron, with the blog
    profile.
 
 ## Goals
@@ -41,7 +40,7 @@ means either living with it for every document or starting Aaron with
   profile is chosen in one place.)
 - Creating files from the command line, waiting for the window to close
   (`--wait`), or line numbers.
-- Changing the blog's `the draft script`. It lives in the user's other
+- Changing the blog's draft script. It lives in the user's other
   repository; the user gets the one-line change to make themselves.
 
 ## Anti-goals
@@ -193,9 +192,8 @@ aaron --help
 
 ### For the blog
 
-The user changes `the draft script`'s `open_editor` to run
-`["aaron", "--profile", "Blog", filename]` (or keeps the
-`EDITOR` variable pattern). The user-facing docs give this example.
+The user changes the draft script to run
+`["aaron", "--profile", "Blog", filename]`. The user-facing docs give this example.
 
 ## Documentation and tests
 
