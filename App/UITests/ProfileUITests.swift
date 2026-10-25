@@ -36,10 +36,10 @@ final class ProfileUITests: AaronUITestCase {
         let status = app.menuButtons["statusProfile"]
         waitFor(status)
         status.click()
-        app.menuItems["Plain"].click()
+        status.menuItems["Plain"].click()
         waitUntil { self.app.staticTexts["documentMode"].value as? String == "Markdown" }
         status.click()
-        app.menuItems["Default"].click()
+        status.menuItems["Default"].click()
         waitUntil { self.app.staticTexts["documentMode"].value as? String == "Pelican" }
     }
 }

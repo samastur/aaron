@@ -21,15 +21,15 @@ session, so some checks are still outstanding.
 | `aaron` command: arguments, errors, URL encoding; end to end against the running app | `CommandScriptTests`, smoke `cli` |
 | Release build compiles without the harness | `xcodebuild -configuration Release` |
 | Menu commands enabled for the active document window | checked by hand (View ▸ Show/Hide Preview, Review actions and Clear Suggestions) |
-| UI: opening, typing, preview toggling and renderer switching, review run/accept/undo/dismiss/keyboard navigation, read-only while running and cancel (⌘.), AI errors, Pelican detection and tags, tag completion popup (opens while typing, Return accepts), New Pelican Post, adding an action in Settings | `AaronUITests`: 16 tests pass, including reverting/reopening suggestions and Markdown Help (shortcut and Help menu, plain and Pelican with plugins). Runtime warning from AppKit, see [testing.md](testing.md#known-warning-priority-inversion-in-ui-tests) |
+| UI: opening, typing, preview toggling and renderer switching, review run/accept/undo/dismiss/keyboard navigation, read-only while running and cancel (⌘.), AI errors, Pelican detection and tags, tag completion popup (opens while typing, Return accepts), New Pelican Post, adding an action in Settings | `AaronUITests`: 20 tests pass (2026-10-25), including reverting/reopening suggestions, Markdown Help (shortcut and Help menu, plain and Pelican with plugins), switching profiles from View ▸ Profile and the status bar, and adding, renaming, defaulting and editing profiles in Settings. Runtime warning from AppKit, see [testing.md](testing.md#known-warning-priority-inversion-in-ui-tests) |
 
 ## Not yet verified
 
 Still to check by hand:
 
-- the profile UI tests (`ProfileUITests`, the two new `SettingsUITests`),
-  written but not yet run;
-- `aaron` starting Aaron when it isn't running (the token wait);
+- that `aaron` started without Aaron running shows the window (the command
+  succeeded both with and without an existing token, 2026-10-25; the window
+  itself was not observed by a test);
 - Aaron ▸ Install Command Line Tool… and `scripts/install.sh`;
 - Esc on an empty tag listing all tags;
 - the Settings window beyond adding an action (Test Command, Restore
