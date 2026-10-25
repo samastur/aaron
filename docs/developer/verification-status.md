@@ -16,6 +16,9 @@ session, so some checks are still outstanding.
 | Real tools: a real Pelican blog's preview, full-build and tag scripts, theme assets | harness runs with a profile like `docs/user/examples/pelican-blog.json` |
 | Real AI: Claude and Codex return suggestions that resolve correctly | live tests, plus a Claude run on a 1,374-word post in the app (27 suggestions, all located) |
 | Light and dark mode: metadata key colours, review panel selection, built-in and external previews | harness snapshots with `AARON_APPEARANCE` (2026-10-24); see below for what snapshots can't show |
+| Profiles: storage, migration, naming, unreadable files, default, rename/delete/import | `ProfileStoreTests`, `AppModelTests` |
+| Per-window profiles: switching, following edits/renames/deletes, request handling | `DocumentWindowModelTests`, `OpenRequestHandlingTests`, smoke `profiles` |
+| `aaron` command: arguments, errors, URL encoding; end to end against the running app | `CommandScriptTests`, smoke `cli` |
 | Release build compiles without the harness | `xcodebuild -configuration Release` |
 | Menu commands enabled for the active document window | checked by hand (View ▸ Show/Hide Preview, Review actions and Clear Suggestions) |
 | UI: opening, typing, preview toggling and renderer switching, review run/accept/undo/dismiss/keyboard navigation, read-only while running and cancel (⌘.), AI errors, Pelican detection and tags, tag completion popup (opens while typing, Return accepts), New Pelican Post, adding an action in Settings | `AaronUITests`: 16 tests pass, including reverting/reopening suggestions and Markdown Help (shortcut and Help menu, plain and Pelican with plugins). Runtime warning from AppKit, see [testing.md](testing.md#known-warning-priority-inversion-in-ui-tests) |
@@ -24,6 +27,10 @@ session, so some checks are still outstanding.
 
 Still to check by hand:
 
+- the profile UI tests (`ProfileUITests`, the two new `SettingsUITests`),
+  written but not yet run;
+- `aaron` starting Aaron when it isn't running (the token wait);
+- Aaron ▸ Install Command Line Tool… and `scripts/install.sh`;
 - Esc on an empty tag listing all tags;
 - the Settings window beyond adding an action (Test Command, Restore
   Defaults, renderer and provider editing, the new Markdown Help fields);

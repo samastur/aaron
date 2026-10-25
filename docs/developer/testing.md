@@ -33,8 +33,8 @@ xcodebuild -project Aaron.xcodeproj -scheme Aaron -derivedDataPath ../build/Deri
 
 XCTest cases in `App/Tests`, hosted in the app, for logic that lives in the
 app target (`AppModel` configuration handling, `DocumentWindowModel`). They
-need no special permissions. The test scheme sets `AARON_CONFIG_PATH` so the
-host app never touches the real configuration.
+need no special permissions. The test scheme sets `AARON_SUPPORT_DIR` so the
+host app never touches the real profiles.
 
 ## Smoke tests
 
@@ -47,8 +47,11 @@ End-to-end checks of the real app that need **no** macOS automation
 permission: Debug builds contain a harness (`DebugHarness.swift`) that drives
 the first document window from a JSON step script and checks expectations
 from inside the app. Each scenario `App/SmokeTests/<name>.json` runs with
-`App/SmokeTests/config.json` (fake AI providers, renderers and tag command
-from `App/UITests/Fixtures`) on `<name>.md`, or `story.md` if there is none.
+`App/SmokeTests/config.json` as the profile *Default* (fake AI providers,
+renderers and tag command from `App/UITests/Fixtures`) on `<name>.md`, or
+`story.md` if there is none. Extra profiles for a scenario go in
+`App/SmokeTests/<name>.profiles/`, extra files for its work folder in
+`App/SmokeTests/<name>.files/`.
 The script prints `PASS`/`FAIL` per scenario and keeps the output folder of
 failed ones.
 
@@ -60,7 +63,8 @@ Run the Debug app with:
 |---|---|
 | `AARON_DEBUG_SCRIPT` | path of the step script (JSON array) |
 | `AARON_SNAPSHOT_DIR` | where snapshots, `progress.txt` and `result.txt` go |
-| `AARON_CONFIG_PATH` | configuration to use |
+| `AARON_SUPPORT_DIR` | settings folder (profiles) to use |
+| `WORK` | the scenario's work folder, for `$WORK` in `cli` steps |
 | `AARON_APPEARANCE` | `dark` or `light` forces that appearance; otherwise the system's |
 
 Within a step, actions run first (in the order listed), then `wait`,
@@ -78,6 +82,8 @@ Within a step, actions run first (in the order listed), then `wait`,
 | `"accept": n`, `"dismiss": n` | accept/dismiss the n-th highlighted suggestion |
 | `"undo": true` | undo |
 | `"renderer": "id"` | switch preview renderer |
+| `"profile": "name"` | switch the window's profile |
+| `"cli": ["--profile", "x", "$WORK/a.md"]` | run the bundled `aaron` command (opens in the background, `AARON_OPEN_IN_BACKGROUND`); a nonzero exit is a failure |
 | `"preview": true/false` | show/hide the preview |
 | `"wait": seconds` | sleep |
 | `"waitIdle": true` | wait until no AI action runs and no preview is pending |
@@ -92,6 +98,7 @@ Expectation keys: `text`, `textContains`, `textLacks`, `isPelican`,
 `autoCompletionRequested`, `statuses` (counts by suggestion status, e.g.
 `{"open": 2, "notFound": 1}`), `selectedSuggestion` (original text),
 `showReview`, `showPreview`, `windowCount`, `anyWindowTextStartsWith`,
+`profile`, `windowProfiles` (document file name → its window's profile),
 `menuItemEnabled` (menu path), `words`, `previewTextContains`, `previewTextLacks` (the
 rendered page's visible text, read with JavaScript from the app).
 

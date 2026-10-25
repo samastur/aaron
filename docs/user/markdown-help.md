@@ -23,7 +23,8 @@ it again, for example after changing the plugin list.
 ## Plugins
 
 To list your site's plugins, Aaron runs the **plugins command** from
-**Settings ▸ Pelican ▸ Markdown Help**. The command prints the plugin names:
+**Settings ▸ Pelican ▸ Markdown Help** of the window's
+[profile](profiles.md) (its help folder is used too). The command prints the plugin names:
 
 - one per line, or
 - as a JSON list (`["a", "b"]`), or

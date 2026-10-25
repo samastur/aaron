@@ -137,3 +137,48 @@ Each one can be revisited.
     showed black text on the dark window in dark mode. The built-in
     renderer declares `color-scheme: light dark` and still follows the
     appearance.
+40. **Profiles are files named after the profile** in `Profiles/`, with the
+    default in `profiles.json`, so they can be copied, shared or kept in
+    git. On first start an existing `config.json` becomes the profile
+    *Default* and is renamed to `config.json.migrated`, not deleted.
+41. **Profile names** must not be empty, start with "." or contain "/" or
+    ":", and must be unique ignoring case (they are file names on a
+    case-insensitive file system). The `aaron` command matches them
+    ignoring case too.
+42. **New windows always use the default profile**, including File ▸ New
+    Pelican Post, which takes the default profile's template. Profiles are
+    not remembered per file or folder yet.
+43. **Switching a window's profile keeps its review suggestions**; they
+    belong to the text. A running AI action keeps the provider it started
+    with.
+44. **Settings opens on the profile of the window last in front**, and
+    every tab except Profiles has a profile menu at the top, so it is always
+    clear which profile is being edited.
+45. **The profile is always shown in the status bar** and can be changed
+    there, as well as in a toolbar menu and View ▸ Profile.
+46. **`aaron` checks every file before opening any**: a typo in one name
+    doesn't leave half the files opened.
+47. **A file already open** comes to the front when `aaron` opens it, and
+    with `--profile` its window switches to that profile instead of a second
+    window opening.
+48. **Debug builds have their own identity** (`net.gaivo.Aaron.debug`,
+    *Aaron Debug*, `~/Library/Application Support/Aaron Debug/`), so a
+    development build and the installed app never share or overwrite
+    profiles, and `open -a` always reaches the intended copy.
+49. **Only the `aaron` command can open files from outside with a chosen
+    profile.** It sends an `aaron://open` URL with a random token from
+    `cli-token` (mode 0600). A URL scheme can be triggered by any web page or
+    app, and opening a file runs its profile's commands; requests without
+    the token are ignored.
+50. **`AARON_SUPPORT_DIR` replaces `AARON_CONFIG_PATH`** for tests and
+    development: it points at a whole settings folder.
+51. **The command is installed only in `~/.local/bin`**, as a symlink to
+    the script inside the app, never in a Homebrew prefix (it could clash
+    with a Homebrew-installed version) or anywhere needing admin rights. An
+    existing file that isn't such a symlink is never replaced.
+52. **`scripts/install.sh` moves an older `/Applications/Aaron.app` to the
+    Trash** instead of deleting it, and asks before quitting a running
+    Aaron.
+53. **Smoke tests open files in the background** (`AARON_OPEN_IN_BACKGROUND`,
+    honoured by the script, set only by the harness), so they never take
+    focus from the person at the Mac.

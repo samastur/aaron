@@ -2,15 +2,17 @@
 
 ## Installing
 
-Aaron is built from source (see the [developer guide](../developer/development.md)):
+Aaron is built from source (see the [developer guide](../developer/development.md)).
+From the repository:
 
 ```sh
-cd App
-xcodegen generate
-xcodebuild -project Aaron.xcodeproj -scheme Aaron -configuration Release \
-  -derivedDataPath ../build/DerivedData build
-cp -R ../build/DerivedData/Build/Products/Release/Aaron.app /Applications/
+scripts/install.sh
 ```
+
+This builds the app and installs it as `/Applications/Aaron.app`. An older
+copy is moved to the Trash; if Aaron is running, the script asks before
+quitting it. To open files from Terminal or your own scripts, then choose
+**Aaron ▸ Install Command Line Tool…** (see [The `aaron` command](command-line.md)).
 
 The app is signed locally ("ad hoc"), so the first time you open it you may
 need to Control-click it in Finder and choose **Open**.
@@ -51,6 +53,7 @@ A document window has up to three parts:
 
 The toolbar's **AI Actions** menu (sparkles icon) runs an AI action and opens
 the review panel. The status bar at the bottom shows word and character
-counts and whether the document is treated as Markdown or as a Pelican post.
+counts, whether the document is treated as Markdown or as a Pelican post,
+and the window's [profile](profiles.md), which you can change there.
 
 New windows open at 1400 × 860 points; macOS remembers the size you choose.

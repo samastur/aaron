@@ -1,16 +1,24 @@
 # Settings and the configuration file
 
-Open **Aaron ▸ Settings…** (⌘,). Changes take effect immediately in all
-windows and are saved automatically.
+Open **Aaron ▸ Settings…** (⌘,). Settings are organised in
+[profiles](profiles.md): the **Profiles** tab manages them, and the other
+tabs edit the profile chosen in the **Profile** menu at their top. Changes
+take effect immediately in all windows using that profile and are saved
+automatically.
+
+## Profiles
+
+Add, rename, delete and import profiles, and choose the default. See
+[Profiles](profiles.md).
 
 ## General
 
 - **Font size** and **Use a monospaced font**: the editor's font
   ([Writing and editing](editing.md#editor-font)).
-- **Configuration file**: where the settings are stored, with buttons to
-  **Show in Finder**, **Reload from Disk** (after editing the file by hand)
+- **Profile file**: where the chosen profile is stored, with buttons to
+  **Show in Finder**, **Reload All from Disk** (after editing files by hand)
   and **Restore Defaults…**. Restoring the defaults asks for confirmation and
-  removes all renderers, providers and actions you added.
+  removes all renderers, providers and actions you added to that profile.
 
 ## Preview
 
@@ -35,26 +43,28 @@ timeout, **Test Command**, the **plugins command** and **help folder** for
 
 ## The configuration file
 
-Settings live in one JSON file:
+Each profile is one JSON file:
 
 ```
-~/Library/Application Support/Aaron/config.json
+~/Library/Application Support/Aaron/Profiles/<profile name>.json
 ```
 
-The file is created the first time you change a setting. You can edit it in
-any text editor. Then use **Settings ▸ General ▸ Reload from Disk**, or
+(see [Profiles](profiles.md#where-profiles-are-stored)). You can edit it in
+any text editor. Then use **Settings ▸ General ▸ Reload All from Disk**, or
 restart Aaron. Every key is optional: missing keys get their default values,
 so a file can contain just what you want to change. `~` may be used in all
 paths.
 
-If the file cannot be read (for example after a typing mistake), Aaron
-shows an alert with the error, uses the defaults, and **does not overwrite
-the file** until it has been reloaded successfully, so your edits are not
-lost. Fix the file and choose **Reload from Disk**.
+If a file cannot be read (for example after a typing mistake), Aaron shows
+an alert with the error, uses the defaults for that profile, and **does not
+overwrite the file** until it has been reloaded successfully, so your edits
+are not lost. Fix the file and choose **Reload All from Disk**. Other
+profiles are not affected.
 
-To use a different file, start Aaron with the environment variable
-`AARON_CONFIG_PATH` set to its path, for example from Terminal:
-`AARON_CONFIG_PATH=~/aaron-test.json /Applications/Aaron.app/Contents/MacOS/Aaron`.
+To try settings without touching your own, start Aaron with the environment
+variable `AARON_SUPPORT_DIR` set to another folder, for example from
+Terminal:
+`AARON_SUPPORT_DIR=~/aaron-test /Applications/Aaron.app/Contents/MacOS/Aaron`.
 
 ### Reference
 

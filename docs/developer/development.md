@@ -45,12 +45,17 @@ Warnings are errors (`SWIFT_TREAT_WARNINGS_AS_ERRORS`). The line
 AppIntents.framework dependency found` is a log message of an Xcode build
 tool, not a compiler warning; there is no setting to silence it.
 
-To run with a separate configuration (recommended while developing):
+Debug builds are called *Aaron Debug* and keep their profiles in
+`~/Library/Application Support/Aaron Debug`, apart from the installed app.
+To run with yet another settings folder:
 
 ```sh
-AARON_CONFIG_PATH=/tmp/aaron-dev.json \
+AARON_SUPPORT_DIR=/tmp/aaron-dev \
   ../build/DerivedData/Build/Products/Debug/Aaron.app/Contents/MacOS/Aaron some.md
 ```
+
+`scripts/install.sh` builds the Release configuration and installs it in
+`/Applications` (an older copy goes to the Trash).
 
 Files given as arguments are opened as documents.
 

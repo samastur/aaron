@@ -108,7 +108,8 @@ fields, its link syntax and help for the plugins your site uses. See
 ## New posts
 
 **File ▸ New Pelican Post** (⌥⌘N) opens a new document from the template in
-**Settings ▸ Pelican ▸ New post template**. In the template, `{date}` becomes
+**Settings ▸ Pelican ▸ New post template** of the default
+[profile](profiles.md), which the new window also uses. In the template, `{date}` becomes
 the current date and time (`2026-10-24 10:00`) and `{day}` the date
 (`2026-10-24`). The default template is:
 

@@ -78,6 +78,13 @@ tested.
 - `TextStatistics` — word and character counts for the status bar.
 - `Configuration` / `ConfigurationStore` — the Codable settings model and
   its JSON persistence.
+- `ProfileStore` — the support folder: one configuration file per profile,
+  the default profile, migration from the old single `config.json`, and the
+  `cli-token` shared with the `aaron` command.
+- `OpenRequest` — the `aaron://open?token=…&profile=…&path=…` URL the
+  command sends.
+- `CommandLineInstaller` — links `~/.local/bin/aaron` to the script in the
+  app bundle and checks `PATH`.
 
 ### AaronPreview
 
@@ -174,11 +181,37 @@ external sites open in the default browser.
 
 ## Configuration
 
-A single JSON file at
-`~/Library/Application Support/Aaron/config.json` (overridable with the
-`AARON_CONFIG_PATH` environment variable, used by UI tests). It is edited
-through the Settings window and can also be edited by hand. See the user
-documentation for the format.
+Settings are kept as **profiles**: one JSON configuration per profile in
+`<support>/Profiles/<name>.json`, plus `<support>/profiles.json` naming the
+default. `<support>` is `~/Library/Application Support/Aaron` for Release
+builds and `… /Aaron Debug` for Debug builds (Info.plist key
+`AaronSupportFolderName`; Debug builds also have their own bundle id,
+`net.gaivo.Aaron.debug`), so a development build never writes the real
+profiles. `AARON_SUPPORT_DIR` overrides the folder (tests).
+
+`AppModel` holds every profile in memory, saves each one on its own 400 ms
+after a change, and never overwrites a profile whose file failed to parse.
+It keeps weak references to the open `DocumentWindowModel`s and tells the
+ones using a profile when it changes, is renamed or deleted. A window's
+`profileName` starts as the default (or the profile the `aaron` command
+asked for) and can be switched at any time; `configurationChanged(from:)`
+then updates Pelican detection, tags, the renderer and the preview.
+
+### The `aaron` command
+
+`App/Sources/Aaron/Resources/aaron` is a zsh script copied into the app's
+Resources. It finds its app through its own (symlink-resolved) path, checks
+the files and the profile name, then runs
+`open -a <its Aaron.app> 'aaron://open?token=…'`. The app registers the
+`aaron` URL scheme and handles the `GetURL` Apple Event in its
+`AppDelegate` (installed in `applicationWillFinishLaunching`, so a request
+that starts the app is not lost). `AppModel.handle(_:)` ignores requests
+without the token from `cli-token` (mode 0600), because a URL scheme can be
+triggered by any web page or app and opening a file runs its profile's
+commands. Files are opened through `NSDocumentController`; the requested
+profile waits in `pendingProfiles` until the document's window model is
+created, or is applied directly to a window that already shows the file.
+See the user documentation for the format.
 
 ## Testing
 

@@ -13,7 +13,9 @@ Settings.
 - [Setting up AI actions and providers](ai-setup.md): prompts, Claude, Codex, web search
 - [Pelican support](pelican.md): metadata, tag completion, new posts
 - [Markdown Help](markdown-help.md): the syntax reference, with help for your Pelican plugins
+- [Profiles](profiles.md): several sets of settings, one per window
 - [Settings and the configuration file](settings.md): every option
+- [The `aaron` command](command-line.md): opening files from Terminal and scripts
 - [Keyboard shortcuts](keyboard-shortcuts.md)
 - [Troubleshooting](troubleshooting.md)
 - [Example: setting up a Pelican blog](example-blog-setup.md)

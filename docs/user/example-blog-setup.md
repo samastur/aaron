@@ -15,17 +15,14 @@ If the repository moves, only the paths below change.
 ## Quick setup
 
 A ready-made configuration is in
-[`examples/pelican-blog.json`](examples/pelican-blog.json). If you
-have not changed any settings yet:
+[`examples/pelican-blog.json`](examples/pelican-blog.json). Adjust the
+paths and script names to your blog, then add it as a
+[profile](profiles.md): **Settings ▸ Profiles ▸ Import…**, choose the file
+and name the profile *Blog*. If most of what you write is for the blog,
+also click **Set as Default**.
 
-```sh
-mkdir -p ~/Library/Application\ Support/Aaron
-cp docs/user/examples/pelican-blog.json ~/Library/Application\ Support/Aaron/config.json
-```
-
-Then choose **Settings ▸ General ▸ Reload from Disk**, or restart Aaron. The
-file only contains the blog-specific settings; the default AI providers and
-actions are kept.
+Windows that open with another profile can switch to *Blog* in their status
+bar or with **View ▸ Profile**.
 
 ## What it sets up
 
@@ -79,3 +76,8 @@ It reads `PLUGINS` from `pelicanconf.py` with the blog's own Python, so
 3. Run **Review ▸ Grammar and spelling** (⌥⌘1), then **Style** (⌥⌘3), and
    work through the suggestions. **Fact check** (⌥⌘2) searches the web and
    takes longer.
+
+If your blog has a script that creates a draft, it can open the draft in
+Aaron with the blog profile, whatever the default is:
+`aaron --profile Blog "$file"` (see [The `aaron` command](command-line.md)).
+
