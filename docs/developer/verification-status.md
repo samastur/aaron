@@ -30,7 +30,7 @@ Still to check by hand:
 - that `aaron` started without Aaron running shows the window (the command
   succeeded both with and without an existing token, 2026-10-25; the window
   itself was not observed by a test);
-- Aaron ▸ Install Command Line Tool… and `scripts/install.sh`;
+- Aaron ▸ Install Command Line Tool… (`scripts/install.sh` was run successfully by the user, 2026-10-25);
 - Esc on an empty tag listing all tags;
 - the Settings window beyond adding an action (Test Command, Restore
   Defaults, renderer and provider editing, the new Markdown Help fields);
