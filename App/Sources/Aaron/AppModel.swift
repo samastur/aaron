@@ -31,12 +31,23 @@ final class AppModel {
 
     @ObservationIgnored private var saveTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var windowRefs: [WeakWindow] = []
+    /// Profiles asked for by the `aaron` command, for files about to open.
+    @ObservationIgnored var pendingProfiles: [URL: String] = [:]
+    /// Opens a file as a document; replaced in tests.
+    @ObservationIgnored var openDocument: (URL) -> Void = { url in
+        NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
+            if let error { NSApp.presentError(error) }
+        }
+    }
     @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 
     init(store: ProfileStore) {
         self.store = store
         loadProfiles()
         settingsProfileName = defaultProfileName
+        // The `aaron` command waits for the token: create it after the
+        // profiles, so they exist by the time the command looks for them.
+        _ = try? store.cliToken()
         // Don't lose edits made just before quitting to the save delay.
         terminationObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in

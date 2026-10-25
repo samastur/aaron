@@ -34,4 +34,17 @@ struct AaronApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appModel = AppModel.makeDefault()
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Before launch finishes, so a request that starts the app is not missed.
+        NSAppleEventManager.shared().setEventHandler(
+            self, andSelector: #selector(handleGetURL(_:replyEvent:)),
+            forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
+    }
+
+    @objc private func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
+        guard let text = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
+              let url = URL(string: text) else { return }
+        appModel.handle(url)
+    }
 }

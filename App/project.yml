@@ -75,6 +75,9 @@ targets:
             CFBundleTypeRole: Editor
             LSHandlerRank: Alternate
             LSItemContentTypes: [public.plain-text]
+        CFBundleURLTypes:
+          - CFBundleURLName: Aaron open request
+            CFBundleURLSchemes: [aaron]
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: net.daringfireball.markdown
             UTTypeDescription: Markdown Document

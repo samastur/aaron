@@ -18,7 +18,7 @@ struct DocumentWindow: View {
         }
         .onAppear {
             if model == nil {
-                let created = DocumentWindowModel(appModel: appModel)
+                let created = DocumentWindowModel(appModel: appModel, profileName: appModel.pendingProfile(for: fileURL))
                 appModel.register(created)
                 created.documentOpened(text: document.text, fileURL: fileURL)
                 model = created
