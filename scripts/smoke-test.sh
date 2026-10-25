@@ -22,11 +22,16 @@ fi
 failed=0
 for name in $scenarios; do
   work=$(mktemp -d -t aaron-smoke)
-  sed "s|\$FIXTURES|$FIXTURES|g" $SMOKE/config.json > $work/config.json
+  mkdir -p $work/support/Profiles
+  sed "s|\$FIXTURES|$FIXTURES|g" $SMOKE/config.json > $work/support/Profiles/Default.json
+  # Extra profiles for a scenario: App/SmokeTests/<name>.profiles/*.json
+  for profile in $SMOKE/$name.profiles/*.json(N); do
+    sed "s|\$FIXTURES|$FIXTURES|g" $profile > $work/support/Profiles/${profile:t}
+  done
   document=$SMOKE/story.md
   [[ -f $SMOKE/$name.md ]] && document=$SMOKE/$name.md
   cp $document $work/
-  AARON_CONFIG_PATH=$work/config.json AARON_DEBUG_SCRIPT=$SMOKE/$name.json AARON_SNAPSHOT_DIR=$work/out \
+  AARON_SUPPORT_DIR=$work/support WORK=$work AARON_DEBUG_SCRIPT=$SMOKE/$name.json AARON_SNAPSHOT_DIR=$work/out \
     timeout 120 $APP $work/${document:t} -ApplePersistenceIgnoreState YES > $work/app.log 2>&1
   if [[ -f $work/out/result.txt ]] && [[ $(head -1 $work/out/result.txt) == PASS ]]; then
     print "PASS  $name"

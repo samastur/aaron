@@ -3,7 +3,8 @@ import SwiftUI
 
 @main
 struct AaronApp: App {
-    @State private var appModel = AppModel()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    private var appModel: AppModel { appDelegate.appModel }
 
     var body: some Scene {
         DocumentGroup(newDocument: MarkdownDocument()) { file in
@@ -26,4 +27,11 @@ struct AaronApp: App {
                 .environment(appModel)
         }
     }
+}
+
+/// Owns the app model, so it exists before SwiftUI builds the scenes and
+/// before Apple Events (such as `aaron://` requests) arrive.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let appModel = AppModel.makeDefault()
 }

@@ -58,7 +58,7 @@ final class DocumentWindowModel {
         self.appModel = appModel
     }
 
-    var configuration: Configuration { appModel.configuration }
+    var configuration: Configuration { appModel.configuration(for: appModel.defaultProfileName) }
 
     var availableRenderers: [(id: String, name: String)] {
         [(PreviewRendererConfig.builtinID, "Markdown (built-in)")]

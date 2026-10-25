@@ -39,17 +39,26 @@ targets:
         product: AaronHelp
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: net.gaivo.Aaron
         PRODUCT_NAME: Aaron
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Aaron/Info.plist
         COMBINE_HIDPI_IMAGES: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: net.gaivo.Aaron.debug
+          AARON_DISPLAY_NAME: Aaron Debug
+          AARON_SUPPORT_FOLDER: Aaron Debug
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: net.gaivo.Aaron
+          AARON_DISPLAY_NAME: Aaron
+          AARON_SUPPORT_FOLDER: Aaron
     info:
       path: Sources/Aaron/Info.plist
       properties:
-        CFBundleDisplayName: Aaron
+        CFBundleDisplayName: $(AARON_DISPLAY_NAME)
+        AaronSupportFolderName: $(AARON_SUPPORT_FOLDER)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.productivity
@@ -114,8 +123,8 @@ schemes:
     test:
       config: Debug
       environmentVariables:
-        - variable: AARON_CONFIG_PATH
-          value: $(BUILD_DIR)/test-host-config.json
+        - variable: AARON_SUPPORT_DIR
+          value: $(BUILD_DIR)/test-host-support
           isEnabled: true
       targets:
         - AaronTests

@@ -5,7 +5,6 @@ import SwiftUI
 /// Review mode: run AI actions and work through their suggestions.
 struct SuggestionsPanel: View {
     @Bindable var model: DocumentWindowModel
-    @Environment(AppModel.self) private var appModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,12 +54,12 @@ struct SuggestionsPanel: View {
                 Text("Review").font(.headline)
                 Spacer()
                 Menu("Run") {
-                    ForEach(appModel.configuration.aiActions) { action in
+                    ForEach(model.configuration.aiActions) { action in
                         Button(action.name) { model.run(action) }
                     }
                 }
                 .fixedSize()
-                .disabled(model.isRunningAction || appModel.configuration.aiActions.isEmpty)
+                .disabled(model.isRunningAction || model.configuration.aiActions.isEmpty)
                 .accessibilityIdentifier("runActionMenu")
             }
             if let name = model.runningActionName {

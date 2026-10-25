@@ -3,40 +3,39 @@ import AaronPelican
 import AppKit
 import Observation
 
-/// App-wide state: the configuration and services shared by all windows.
+/// App-wide state: the configuration profiles and services shared by all
+/// windows.
 @MainActor
 @Observable
 final class AppModel {
-    let configurationURL: URL
+    let store: ProfileStore
     let tagProvider = TagProvider()
 
-    /// Edits are saved to disk shortly after they happen.
-    var configuration: Configuration {
-        didSet { if configuration != oldValue { scheduleSave() } }
-    }
+    private(set) var profileNames: [String] = []
+    private(set) var defaultProfileName = ProfileStore.initialProfileName
+    private var profiles: [String: Configuration] = [:]
+
+    /// The profile the Settings window edits.
+    var settingsProfileName = ProfileStore.initialProfileName
+    /// The profile of the document window that was last in front.
+    var frontProfileName: String?
 
     /// What the Markdown Help window shows: chosen when it is opened.
-    var helpRequest = HelpRequest(isPelican: false, fileURL: nil)
+    var helpRequest = HelpRequest(isPelican: false, fileURL: nil, profileName: ProfileStore.initialProfileName)
 
-    /// Set when the configuration file could not be read or written.
+    /// Set when a profile could not be read or written.
     var configurationError: String?
-    /// The file on disk could not be parsed; it is not overwritten until it
-    /// has been reloaded successfully, so hand edits are not lost.
-    private var fileIsUnreadable = false
+    /// Profiles whose file could not be parsed; they are not overwritten
+    /// until reloaded successfully, so hand edits are not lost.
+    private var unreadable: Set<String> = []
 
-    @ObservationIgnored private var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var saveTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 
-    init(configurationURL: URL = ConfigurationStore.defaultURL()) {
-        self.configurationURL = configurationURL
-        do {
-            configuration = try ConfigurationStore.load(from: configurationURL)
-        } catch {
-            configuration = .default
-            fileIsUnreadable = true
-            configurationError = "Could not read \(configurationURL.path): \(error.localizedDescription). "
-                + "Using default settings; they will not be saved until the file is fixed or reloaded."
-        }
+    init(store: ProfileStore) {
+        self.store = store
+        loadProfiles()
+        settingsProfileName = defaultProfileName
         // Don't lose edits made just before quitting to the save delay.
         terminationObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in
@@ -44,52 +43,172 @@ final class AppModel {
         }
     }
 
-    func saveIfPending() {
-        guard let task = saveTask else { return }
-        task.cancel()
-        saveTask = nil
-        saveNow()
+    /// The model for the running app: the support folder named in
+    /// Info.plist (different for Debug builds), or `AARON_SUPPORT_DIR`.
+    static func makeDefault() -> AppModel {
+        let folder = Bundle.main.object(forInfoDictionaryKey: "AaronSupportFolderName") as? String ?? "Aaron"
+        return AppModel(store: ProfileStore(directory: ProfileStore.defaultDirectory(folderName: folder)))
     }
 
-    func reloadConfiguration() {
+    // MARK: - Configurations
+
+    /// The named profile's configuration; the default profile's for an
+    /// unknown name.
+    func configuration(for name: String) -> Configuration {
+        profiles[name] ?? profiles[defaultProfileName] ?? .default
+    }
+
+    /// Changes a profile; it is saved shortly after.
+    func setConfiguration(_ configuration: Configuration, for name: String) {
+        guard let old = profiles[name], old != configuration else { return }
+        profiles[name] = configuration
+        scheduleSave(name)
+    }
+
+    /// The profile selected in Settings, for its bindings.
+    var settingsConfiguration: Configuration {
+        get { configuration(for: settingsProfileName) }
+        set { setConfiguration(newValue, for: settingsProfileName) }
+    }
+
+    func profileURL(_ name: String) -> URL { store.url(for: name) }
+
+    // MARK: - Managing profiles
+
+    /// Adds a copy of a profile, named "<name> copy" (or "copy 2", …).
+    @discardableResult
+    func addProfile(copying source: String) throws -> String {
+        var name = "\(source) copy"
+        var number = 2
+        while ProfileStore.validationError(for: name, existing: profileNames) != nil {
+            name = "\(source) copy \(number)"
+            number += 1
+        }
+        let configuration = configuration(for: source)
+        try store.save(configuration, as: name)
+        profiles[name] = configuration
+        profileNames = store.names()
+        return name
+    }
+
+    func renameProfile(_ old: String, to new: String) throws {
+        guard old != new else { return }
+        flushSave(old)
+        try store.rename(old, to: new)
+        profiles[new] = profiles.removeValue(forKey: old)
+        if unreadable.remove(old) != nil { unreadable.insert(new) }
+        profileNames = store.names()
+        defaultProfileName = store.defaultProfileName()
+        if settingsProfileName == old { settingsProfileName = new }
+        if frontProfileName == old { frontProfileName = new }
+        if helpRequest.profileName == old { helpRequest.profileName = new }
+        profileRenamed(old, to: new)
+    }
+
+    func deleteProfile(_ name: String) throws {
+        try store.delete(name)
+        saveTasks.removeValue(forKey: name)?.cancel()
+        let old = profiles.removeValue(forKey: name)
+        unreadable.remove(name)
+        profileNames = store.names()
+        if settingsProfileName == name { settingsProfileName = defaultProfileName }
+        if frontProfileName == name { frontProfileName = nil }
+        profileDeleted(name, configuration: old ?? .default)
+    }
+
+    func setDefaultProfile(_ name: String) throws {
+        try store.setDefaultProfile(name)
+        defaultProfileName = name
+    }
+
+    func importProfile(from source: URL, named name: String) throws {
+        try store.importProfile(from: source, as: name)
+        profiles[name] = try store.load(name)
+        profileNames = store.names()
+    }
+
+    /// Reads every profile from disk again, e.g. after editing files by hand.
+    func reloadProfiles() {
+        for task in saveTasks.values { task.cancel() }
+        saveTasks = [:]
+        let old = profiles
+        loadProfiles()
+        if !profileNames.contains(settingsProfileName) { settingsProfileName = defaultProfileName }
+        profilesReloaded(from: old)
+    }
+
+    func revealProfilesFolder() {
+        let url = store.url(for: settingsProfileName)
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            NSWorkspace.shared.activateFileViewerSelecting([store.profilesDirectory])
+        }
+    }
+
+    private func loadProfiles() {
+        var errors: [String] = []
         do {
-            let loaded = try ConfigurationStore.load(from: configurationURL)
-            configuration = loaded
-            // Just read from disk; no need to write it back.
-            saveTask?.cancel()
-            configurationError = nil
-            fileIsUnreadable = false
+            try store.prepare()
         } catch {
-            fileIsUnreadable = true
-            configurationError = "Could not read \(configurationURL.path): \(error.localizedDescription)"
+            errors.append("Could not set up the profiles folder \(store.profilesDirectory.path): \(error.localizedDescription)")
         }
+        var loaded: [String: Configuration] = [:]
+        unreadable = []
+        for name in store.names() {
+            do {
+                loaded[name] = try store.load(name)
+            } catch {
+                loaded[name] = .default
+                unreadable.insert(name)
+                errors.append("Could not read profile “\(name)” (\(store.url(for: name).path)): "
+                              + "\(error.localizedDescription). It uses default settings and will not be saved "
+                              + "until the file is fixed and reloaded.")
+            }
+        }
+        if loaded.isEmpty { loaded[ProfileStore.initialProfileName] = .default }
+        profiles = loaded
+        profileNames = loaded.keys.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        defaultProfileName = store.defaultProfileName()
+        if profiles[defaultProfileName] == nil { defaultProfileName = profileNames[0] }
+        configurationError = errors.isEmpty ? nil : errors.joined(separator: "\n\n")
     }
 
-    func revealConfigurationFile() {
-        if !FileManager.default.fileExists(atPath: configurationURL.path) {
-            fileIsUnreadable = false
-            saveNow()
-        }
-        NSWorkspace.shared.activateFileViewerSelecting([configurationURL])
+    // MARK: - Saving
+
+    func saveIfPending() {
+        for name in Array(saveTasks.keys) { flushSave(name) }
     }
 
-    private func scheduleSave() {
-        saveTask?.cancel()
-        saveTask = Task { [weak self] in
+    private func flushSave(_ name: String) {
+        guard let task = saveTasks.removeValue(forKey: name) else { return }
+        task.cancel()
+        saveNow(name)
+    }
+
+    private func scheduleSave(_ name: String) {
+        saveTasks[name]?.cancel()
+        saveTasks[name] = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
-            self?.saveTask = nil
-            self?.saveNow()
+            self?.saveTasks[name] = nil
+            self?.saveNow(name)
         }
     }
 
-    func saveNow() {
+    private func saveNow(_ name: String) {
         // Don't overwrite a file we failed to parse; the user may be fixing it.
-        guard !fileIsUnreadable else { return }
+        guard !unreadable.contains(name), let configuration = profiles[name] else { return }
         do {
-            try ConfigurationStore.save(configuration, to: configurationURL)
+            try store.save(configuration, as: name)
         } catch {
-            configurationError = "Could not save settings: \(error.localizedDescription)"
+            configurationError = "Could not save profile “\(name)”: \(error.localizedDescription)"
         }
     }
+
+    // MARK: - Windows (filled in with per-window profiles)
+
+    private func profileRenamed(_ old: String, to new: String) {}
+    private func profileDeleted(_ name: String, configuration: Configuration) {}
+    private func profilesReloaded(from old: [String: Configuration]) {}
 }

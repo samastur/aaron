@@ -25,31 +25,31 @@ private struct GeneralSettings: View {
             Section("Editor") {
                 LabeledContent("Font size") {
                     HStack {
-                        TextField("", value: $appModel.configuration.editor.fontSize, format: .number)
+                        TextField("", value: $appModel.settingsConfiguration.editor.fontSize, format: .number)
                             .frame(width: 60)
-                        Stepper("", value: $appModel.configuration.editor.fontSize, in: EditorSettings.fontSizeRange, step: 1)
+                        Stepper("", value: $appModel.settingsConfiguration.editor.fontSize, in: EditorSettings.fontSizeRange, step: 1)
                             .labelsHidden()
                     }
                 }
-                Toggle("Use a monospaced font", isOn: $appModel.configuration.editor.monospaced)
+                Toggle("Use a monospaced font", isOn: $appModel.settingsConfiguration.editor.monospaced)
             }
             Section("Configuration file") {
-                Text(appModel.configurationURL.path)
+                Text(appModel.profileURL(appModel.settingsProfileName).path)
                     .font(.callout.monospaced())
                     .textSelection(.enabled)
                 Text("Settings are saved automatically. You can also edit the file by hand and reload it.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 HStack {
-                    Button("Show in Finder") { appModel.revealConfigurationFile() }
-                    Button("Reload from Disk") { appModel.reloadConfiguration() }
+                    Button("Show in Finder") { appModel.revealProfilesFolder() }
+                    Button("Reload from Disk") { appModel.reloadProfiles() }
                     Button("Restore Defaults…") { confirmReset = true }
                 }
             }
         }
         .formStyle(.grouped)
         .confirmationDialog("Restore all settings to their defaults?", isPresented: $confirmReset) {
-            Button("Restore Defaults", role: .destructive) { appModel.configuration = .default }
+            Button("Restore Defaults", role: .destructive) { appModel.settingsConfiguration = .default }
         } message: {
             Text("Preview renderers, AI providers and actions you added will be removed.")
         }
@@ -66,13 +66,13 @@ private struct PreviewSettings: View {
     var body: some View {
         @Bindable var appModel = appModel
         let renderers = [(PreviewRendererConfig.builtinID, "Markdown (built-in)")]
-            + appModel.configuration.previewRenderers.map { ($0.id, $0.name) }
+            + appModel.settingsConfiguration.previewRenderers.map { ($0.id, $0.name) }
         VStack(alignment: .leading, spacing: 12) {
             Form {
-                Picker("Default for Markdown documents", selection: $appModel.configuration.defaultRenderer.markdown) {
+                Picker("Default for Markdown documents", selection: $appModel.settingsConfiguration.defaultRenderer.markdown) {
                     ForEach(renderers, id: \.0) { Text($0.1).tag($0.0) }
                 }
-                Picker("Default for Pelican posts", selection: $appModel.configuration.defaultRenderer.pelican) {
+                Picker("Default for Pelican posts", selection: $appModel.settingsConfiguration.defaultRenderer.pelican) {
                     ForEach(renderers, id: \.0) { Text($0.1).tag($0.0) }
                 }
             }
@@ -81,7 +81,7 @@ private struct PreviewSettings: View {
             Text("External renderers")
                 .font(.headline)
                 .padding(.horizontal)
-            ItemListEditor(items: $appModel.configuration.previewRenderers,
+            ItemListEditor(items: $appModel.settingsConfiguration.previewRenderers,
                            newItem: { PreviewRendererConfig(name: "New Renderer", command: "") },
                            title: \.name) { $renderer in
                 RendererDetail(renderer: $renderer)
@@ -148,14 +148,14 @@ private struct AISettings: View {
             .fixedSize()
             .padding(.top, 8)
             if section == 0 {
-                ItemListEditor(items: $appModel.configuration.aiActions,
+                ItemListEditor(items: $appModel.settingsConfiguration.aiActions,
                                newItem: { AIActionConfig(name: "New Action", prompt: "",
-                                                         providerID: appModel.configuration.aiProviders.first?.id ?? "") },
+                                                         providerID: appModel.settingsConfiguration.aiProviders.first?.id ?? "") },
                                title: \.name) { $action in
-                    ActionDetail(action: $action, providers: appModel.configuration.aiProviders)
+                    ActionDetail(action: $action, providers: appModel.settingsConfiguration.aiProviders)
                 }
             } else {
-                ItemListEditor(items: $appModel.configuration.aiProviders,
+                ItemListEditor(items: $appModel.settingsConfiguration.aiProviders,
                                newItem: { AIProviderConfig(name: "New Provider", command: "") },
                                title: \.name) { $provider in
                     ProviderDetail(provider: $provider)
@@ -223,7 +223,7 @@ private struct PelicanSettingsView: View {
     var body: some View {
         @Bindable var appModel = appModel
         Form {
-            Picker("Pelican mode", selection: $appModel.configuration.pelican.detection) {
+            Picker("Pelican mode", selection: $appModel.settingsConfiguration.pelican.detection) {
                 Text("Automatic").tag(PelicanSettings.Detection.automatic)
                 Text("Always on").tag(PelicanSettings.Detection.always)
                 Text("Off").tag(PelicanSettings.Detection.never)
@@ -232,16 +232,16 @@ private struct PelicanSettingsView: View {
                 .font(.caption).foregroundStyle(.secondary)
             Section("Tags") {
                 LabeledContent("Tag command") {
-                    CommandEditor(text: $appModel.configuration.pelican.tagsCommand)
+                    CommandEditor(text: $appModel.settingsConfiguration.pelican.tagsCommand)
                 }
                 Text("Prints the known tags, as JSON ({\"tags\": [{\"name\": …, \"count\": …}]}) or one per line. Placeholders such as {dir} refer to the open document.")
                     .font(.caption).foregroundStyle(.secondary)
-                TextField("Working directory", text: optional($appModel.configuration.pelican.tagsWorkingDirectory),
+                TextField("Working directory", text: optional($appModel.settingsConfiguration.pelican.tagsWorkingDirectory),
                           prompt: Text("document's folder"))
-                TextField("Timeout (seconds)", value: $appModel.configuration.pelican.tagsTimeoutSeconds, format: .number)
+                TextField("Timeout (seconds)", value: $appModel.settingsConfiguration.pelican.tagsTimeoutSeconds, format: .number)
                 HStack {
                     Button("Test Command") { test() }
-                        .disabled(testing || appModel.configuration.pelican.tagsCommand.isEmpty)
+                        .disabled(testing || appModel.settingsConfiguration.pelican.tagsCommand.isEmpty)
                     if testing { ProgressView().controlSize(.small) }
                     if let testResult {
                         Text(testResult).font(.callout).textSelection(.enabled).lineLimit(4)
@@ -250,17 +250,17 @@ private struct PelicanSettingsView: View {
             }
             Section("Markdown Help") {
                 LabeledContent("Plugins command") {
-                    CommandEditor(text: $appModel.configuration.pelican.pluginsCommand)
+                    CommandEditor(text: $appModel.settingsConfiguration.pelican.pluginsCommand)
                 }
                 Text("Prints the names of the site's plugins, one per line, so Help ▸ Markdown Help can explain them. Runs in the post's folder; placeholders such as {dir} refer to the post.")
                     .font(.caption).foregroundStyle(.secondary)
-                TextField("Help folder", text: optional($appModel.configuration.pelican.helpDirectory),
+                TextField("Help folder", text: optional($appModel.settingsConfiguration.pelican.helpDirectory),
                           prompt: Text("optional, e.g. ~/blog/aaron-help"))
                 Text("Your own help files, named after the plugin (e.g. my_plugin.md); they replace Aaron's.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("New post template") {
-                TextEditor(text: $appModel.configuration.pelican.newPostTemplate)
+                TextEditor(text: $appModel.settingsConfiguration.pelican.newPostTemplate)
                     .font(.body.monospaced())
                     .frame(minHeight: 120)
                 Text("Used by File ▸ New Pelican Post. {date} and {day} become the current date.")
@@ -271,7 +271,7 @@ private struct PelicanSettingsView: View {
     }
 
     private func test() {
-        let pelican = appModel.configuration.pelican
+        let pelican = appModel.settingsConfiguration.pelican
         testing = true
         testResult = nil
         Task {

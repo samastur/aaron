@@ -27,16 +27,16 @@ final class DocumentWindowModelTests: XCTestCase {
 
     func testCancelThenRunAgainKeepsTheNewActionRunning() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
-        let app = AppModel(configurationURL: directory.appendingPathComponent("config.json"))
-        app.configuration.aiProviders = [AIProviderConfig(id: "slow", name: "Slow",
+        let app = AppModel(store: ProfileStore(directory: directory))
+        app.settingsConfiguration.aiProviders = [AIProviderConfig(id: "slow", name: "Slow",
                                                           command: "cat >/dev/null; sleep 5; echo '{\"suggestions\": []}'")]
-        app.configuration.aiActions = [AIActionConfig(id: "a", name: "A", prompt: "p", providerID: "slow")]
+        app.settingsConfiguration.aiActions = [AIActionConfig(id: "a", name: "A", prompt: "p", providerID: "slow")]
         let model = DocumentWindowModel(appModel: app)
         model.documentOpened(text: "Text", fileURL: nil)
-        model.run(app.configuration.aiActions[0])
+        model.run(app.settingsConfiguration.aiActions[0])
         try await Task.sleep(for: .milliseconds(200))
         model.cancelAction()
-        model.run(app.configuration.aiActions[0])
+        model.run(app.settingsConfiguration.aiActions[0])
         try await Task.sleep(for: .milliseconds(500))
         XCTAssertTrue(model.isRunningAction, "the second run must still be running")
         model.cancelAction()
@@ -47,10 +47,10 @@ final class DocumentWindowModelTests: XCTestCase {
     func reviewedModel(_ text: String, suggestions json: String) async throws
         -> (DocumentWindowModel, MarkdownTextView, EditorView.Coordinator) {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
-        let app = AppModel(configurationURL: directory.appendingPathComponent("config.json"))
-        app.configuration.aiProviders = [AIProviderConfig(id: "fake", name: "Fake",
+        let app = AppModel(store: ProfileStore(directory: directory))
+        app.settingsConfiguration.aiProviders = [AIProviderConfig(id: "fake", name: "Fake",
                                                           command: "cat >/dev/null; echo '\(json)'")]
-        app.configuration.aiActions = [AIActionConfig(id: "a", name: "A", prompt: "p", providerID: "fake")]
+        app.settingsConfiguration.aiActions = [AIActionConfig(id: "a", name: "A", prompt: "p", providerID: "fake")]
         let model = DocumentWindowModel(appModel: app)
         let textView = EditorView.makeTextView()
         var stored = text
@@ -62,7 +62,7 @@ final class DocumentWindowModelTests: XCTestCase {
         coordinators.append(coordinator)
         model.editor.textView = textView
         model.documentOpened(text: text, fileURL: nil)
-        model.run(app.configuration.aiActions[0])
+        model.run(app.settingsConfiguration.aiActions[0])
         let deadline = Date().addingTimeInterval(10)
         while model.isRunningAction && Date() < deadline { try await Task.sleep(for: .milliseconds(50)) }
         return (model, textView, coordinator)
@@ -106,17 +106,17 @@ final class DocumentWindowModelTests: XCTestCase {
 
     func testConfigurationChangeUnrelatedToWindowDoesNotRerunTags() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
-        let app = AppModel(configurationURL: directory.appendingPathComponent("config.json"))
+        let app = AppModel(store: ProfileStore(directory: directory))
         let counter = directory.appendingPathComponent("count")
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        app.configuration.pelican.tagsCommand = "echo x >> '\(counter.path)'; echo tag"
+        app.settingsConfiguration.pelican.tagsCommand = "echo x >> '\(counter.path)'; echo tag"
         let model = DocumentWindowModel(appModel: app)
         model.documentOpened(text: "Title: T\nTags: a\n\nBody", fileURL: nil)
         let deadline = Date().addingTimeInterval(20)
         while model.tags.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(50)) }
         XCTAssertEqual(model.tags.map(\.name), ["tag"])
-        let old = app.configuration
-        app.configuration.aiActions[0].prompt += " More."
+        let old = app.settingsConfiguration
+        app.settingsConfiguration.aiActions[0].prompt += " More."
         model.configurationChanged(from: old)
         try await Task.sleep(for: .milliseconds(800))
         XCTAssertEqual(try String(contentsOf: counter, encoding: .utf8), "x\n")

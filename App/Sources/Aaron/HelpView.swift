@@ -7,6 +7,8 @@ import SwiftUI
 struct HelpRequest: Equatable {
     var isPelican: Bool
     var fileURL: URL?
+    /// The profile whose plugins command and help folder are used.
+    var profileName: String
     /// Changes on every request, so reopening the window refreshes it.
     var id = UUID()
 }
@@ -52,7 +54,7 @@ struct HelpView: View {
         loading = true
         defer { loading = false }
         let request = appModel.helpRequest
-        let pelicanSettings = appModel.configuration.pelican
+        let pelicanSettings = appModel.configuration(for: request.profileName).pelican
         var pelican: PelicanHelpContext?
         if request.isPelican {
             pelican = await pluginContext(pelicanSettings, fileURL: request.fileURL)

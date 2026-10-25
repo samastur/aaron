@@ -21,7 +21,7 @@ final class SettingsUITests: AaronUITestCase {
         waitFor(app.menuItems["Tone check"])
         app.typeKey(.escape, modifierFlags: [])
 
-        let configURL = workDirectory.appendingPathComponent("config.json")
+        let configURL = profileURL("Default")
         waitUntil {
             (try? String(contentsOf: configURL, encoding: .utf8))?.contains("Tone check") == true
         }

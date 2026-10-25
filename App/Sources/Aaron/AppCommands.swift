@@ -8,7 +8,7 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .newItem) {
-            NewPelicanPostButton(template: appModel.configuration.pelican.newPostTemplate)
+            NewPelicanPostButton(template: appModel.configuration(for: appModel.defaultProfileName).pelican.newPostTemplate)
         }
 
         CommandGroup(after: .toolbar) {
@@ -41,7 +41,7 @@ struct AppCommands: Commands {
         }
 
         CommandMenu("Review") {
-            let actions = appModel.configuration.aiActions
+            let actions = (window?.configuration ?? appModel.configuration(for: appModel.defaultProfileName)).aiActions
             ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
                 actionButton(action, index: index)
             }
@@ -91,8 +91,10 @@ private struct MarkdownHelpButton: View {
     var body: some View {
         Button("Markdown Help") {
             appModel.helpRequest = HelpRequest(
-                isPelican: window?.isPelican ?? (appModel.configuration.pelican.detection == .always),
-                fileURL: window?.fileURL)
+                isPelican: window?.isPelican
+                    ?? (appModel.configuration(for: appModel.defaultProfileName).pelican.detection == .always),
+                fileURL: window?.fileURL,
+                profileName: appModel.defaultProfileName)
             openWindow(id: HelpView.windowID)
         }
         // ⌘? is taken by the Help menu's search field.

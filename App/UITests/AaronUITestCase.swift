@@ -28,8 +28,16 @@ class AaronUITestCase: XCTestCase {
         "/bin/sh '\(fixtures.appendingPathComponent(name).path)'"
     }
 
-    /// Writes the configuration and launches the app, optionally opening `document`.
-    func launch(aiCommand: String? = nil, extraConfig: [String: Any] = [:], document: URL? = nil) throws {
+    var supportDirectory: URL { workDirectory.appendingPathComponent("support") }
+
+    func profileURL(_ name: String) -> URL {
+        supportDirectory.appendingPathComponent("Profiles/\(name).json")
+    }
+
+    /// Writes the configuration as the profile "Default" (plus any extra
+    /// profiles) and launches the app, optionally opening `document`.
+    func launch(aiCommand: String? = nil, extraConfig: [String: Any] = [:], document: URL? = nil,
+                profiles: [String: [String: Any]] = [:], defaultProfile: String? = nil) throws {
         var config: [String: Any] = [
             "aiProviders": [["id": "fake", "name": "Fake AI", "command": aiCommand ?? script("fake-ai.sh"), "timeoutSeconds": 20]],
             "aiActions": [["id": "check", "name": "Check Everything", "prompt": "Check the text.", "providerID": "fake"]],
@@ -38,11 +46,19 @@ class AaronUITestCase: XCTestCase {
                         "pluginsCommand": "printf 'pelican.plugins.simple_footnotes\\nmystery_plugin\\n'"],
         ]
         config.merge(extraConfig) { _, new in new }
-        let configURL = workDirectory.appendingPathComponent("config.json")
-        try JSONSerialization.data(withJSONObject: config).write(to: configURL)
+        try FileManager.default.createDirectory(at: supportDirectory.appendingPathComponent("Profiles"),
+                                                withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: config).write(to: profileURL("Default"))
+        for (name, profile) in profiles {
+            try JSONSerialization.data(withJSONObject: profile).write(to: profileURL(name))
+        }
+        if let defaultProfile {
+            try JSONSerialization.data(withJSONObject: ["defaultProfile": defaultProfile])
+                .write(to: supportDirectory.appendingPathComponent("profiles.json"))
+        }
 
         app = XCUIApplication()
-        app.launchEnvironment["AARON_CONFIG_PATH"] = configURL.path
+        app.launchEnvironment["AARON_SUPPORT_DIR"] = supportDirectory.path
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES", "-NSQuitAlwaysKeepsWindows", "NO"]
         if let document { app.launchArguments.append(document.path) }
         app.launch()

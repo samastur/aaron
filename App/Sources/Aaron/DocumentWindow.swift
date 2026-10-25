@@ -28,7 +28,7 @@ struct DocumentWindow: View {
         }
         .onChange(of: fileURL) { _, url in model?.fileURLChanged(url) }
         .onChange(of: document.text) { _, text in model?.textChanged(text) }
-        .onChange(of: appModel.configuration) { old, _ in model?.configurationChanged(from: old) }
+        .onChange(of: model?.configuration) { old, _ in if let old { model?.configurationChanged(from: old) } }
     }
 }
 
@@ -40,7 +40,7 @@ private struct DocumentContent: View {
     var body: some View {
         VStack(spacing: 0) {
             HSplitView {
-                EditorView(text: $document.text, model: model, settings: appModel.configuration.editor)
+                EditorView(text: $document.text, model: model, settings: model.configuration.editor)
                     .frame(minWidth: 320, idealWidth: 640)
                 if model.showPreview {
                     PreviewPane(model: model)
@@ -75,7 +75,7 @@ private struct DocumentContent: View {
         .alert("Settings problem", isPresented: Binding(
             get: { appModel.configurationError != nil },
             set: { if !$0 { appModel.configurationError = nil } })) {
-            Button("Show File") { appModel.revealConfigurationFile() }
+            Button("Show File") { appModel.revealProfilesFolder() }
             Button("OK", role: .cancel) {}
         } message: {
             Text(appModel.configurationError ?? "")
@@ -90,10 +90,10 @@ struct AIActionsMenu: View {
 
     var body: some View {
         Menu {
-            ForEach(appModel.configuration.aiActions) { action in
+            ForEach(model.configuration.aiActions) { action in
                 Button(action.name) { model.run(action) }
             }
-            if appModel.configuration.aiActions.isEmpty {
+            if model.configuration.aiActions.isEmpty {
                 Text("No AI actions configured")
             }
             Divider()
