@@ -21,13 +21,16 @@ public enum CommandLineInstaller {
         URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".local/bin")
     }
 
-    /// Creates `binDirectory/aaron` → `script`, replacing an older symlink.
+    /// Creates `binDirectory/aaron` → `script`, replacing a link to an older
+    /// copy of Aaron but nothing else.
     @discardableResult
     public static func install(script: URL, into binDirectory: URL) throws -> URL {
         let fm = FileManager.default
         try fm.createDirectory(at: binDirectory, withIntermediateDirectories: true)
         let link = binDirectory.appendingPathComponent("aaron")
-        if (try? fm.destinationOfSymbolicLink(atPath: link.path)) != nil {
+        if let target = try? fm.destinationOfSymbolicLink(atPath: link.path) {
+            // Only a link to the script in some copy of Aaron is ours to replace.
+            guard target.hasSuffix(".app/Contents/Resources/aaron") else { throw InstallError.existingFile(link) }
             try fm.removeItem(at: link)
         } else if fm.fileExists(atPath: link.path) {
             throw InstallError.existingFile(link)

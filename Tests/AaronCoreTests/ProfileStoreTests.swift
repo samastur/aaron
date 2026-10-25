@@ -46,6 +46,19 @@ struct ProfileStoreTests {
         #expect(store.names() == ["Default"])
     }
 
+    @Test func addingAProfileDoesNotChangeTheDefault() throws {
+        try store.prepare()
+        try store.save(.default, as: "Blog")
+        #expect(store.defaultProfileName() == "Default")
+    }
+
+    @Test func migrationKeepsDefaultAsDefault() throws {
+        try write("{}", to: "config.json")
+        try store.prepare()
+        try store.importProfile(from: directory.appendingPathComponent("config.json.migrated"), as: "Aardvark")
+        #expect(store.defaultProfileName() == "Default")
+    }
+
     @Test func defaultFallsBackToFirstName() throws {
         try write("{}", to: "Profiles/Plain.json")
         try write("{}", to: "Profiles/Blog.json")

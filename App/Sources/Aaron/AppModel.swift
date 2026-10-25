@@ -32,10 +32,11 @@ final class AppModel {
     @ObservationIgnored private var saveTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var windowRefs: [WeakWindow] = []
     /// Profiles asked for by the `aaron` command, for files about to open.
-    @ObservationIgnored var pendingProfiles: [URL: String] = [:]
-    /// Opens a file as a document; replaced in tests.
-    @ObservationIgnored var openDocument: (URL) -> Void = { url in
+    @ObservationIgnored var pendingProfiles: [(file: URL, profile: String)] = []
+    /// Opens a file as a document and reports failure; replaced in tests.
+    @ObservationIgnored var openDocument: (URL, @escaping (Error?) -> Void) -> Void = { url, completion in
         NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
+            completion(error)
             if let error { NSApp.presentError(error) }
         }
     }

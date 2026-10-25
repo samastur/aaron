@@ -27,20 +27,37 @@ extension AppModel {
         for path in request.paths {
             let file = URL(fileURLWithPath: path).standardizedFileURL
             if let profile {
-                if let window = windows.first(where: { $0.fileURL?.standardizedFileURL == file }) {
+                if let window = windows.first(where: { $0.fileURL.map { Self.isSameFile($0, file) } ?? false }) {
                     window.profileName = profile
                 } else {
-                    pendingProfiles[file] = profile
+                    pendingProfiles.removeAll { Self.isSameFile($0.file, file) }
+                    pendingProfiles.append((file, profile))
                 }
             }
-            openDocument(file)
+            openDocument(file) { [weak self] error in
+                // Don't let a later, unrelated open pick up the profile.
+                if error != nil { self?.pendingProfiles.removeAll { Self.isSameFile($0.file, file) } }
+            }
         }
     }
 
     /// The profile the `aaron` command asked for when opening this file;
     /// returned once.
     func pendingProfile(for fileURL: URL?) -> String? {
-        guard let fileURL else { return nil }
-        return pendingProfiles.removeValue(forKey: fileURL.standardizedFileURL)
+        guard let fileURL,
+              let index = pendingProfiles.firstIndex(where: { Self.isSameFile($0.file, fileURL) }) else { return nil }
+        return pendingProfiles.remove(at: index).profile
+    }
+
+    /// Whether two URLs name the same file, also when reached through a
+    /// symlink or spelled with different case.
+    static func isSameFile(_ a: URL, _ b: URL) -> Bool {
+        if a.standardizedFileURL == b.standardizedFileURL { return true }
+        func identifier(_ url: URL) -> (any NSObjectProtocol)? {
+            try? URL(fileURLWithPath: url.path).resourceValues(forKeys: [.fileResourceIdentifierKey])
+                .fileResourceIdentifier
+        }
+        guard let first = identifier(a), let second = identifier(b) else { return false }
+        return first.isEqual(second)
     }
 }

@@ -22,7 +22,7 @@ final class OpenRequestHandlingTests: XCTestCase {
         try store.save(.default, as: "Blog")
         try store.setDefaultProfile("Default")
         let app = AppModel(store: store)
-        app.openDocument = { [unowned self] in self.opened.append($0) }
+        app.openDocument = { [unowned self] url, completion in self.opened.append(url); completion(nil) }
         return app
     }
 
@@ -76,5 +76,36 @@ final class OpenRequestHandlingTests: XCTestCase {
         XCTAssertEqual(window.profileName, "Blog")
         XCTAssertEqual(opened.count, 1, "still asked to open, which brings it to the front")
         XCTAssertNil(app.pendingProfile(for: file))
+    }
+
+    func testAlreadyOpenFileIsFoundThroughSymlinkAndCase() throws {
+        let app = try makeApp()
+        let real = directory.appendingPathComponent("real")
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        let file = real.appendingPathComponent("Post.md")
+        try "x".write(to: file, atomically: true, encoding: .utf8)
+        let link = directory.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+        let window = DocumentWindowModel(appModel: app)
+        app.register(window)
+        window.documentOpened(text: "x", fileURL: file)
+        app.handle(try request(app, profile: "Blog", paths: [link.appendingPathComponent("post.md").path]))
+        XCTAssertEqual(window.profileName, "Blog")
+        XCTAssertTrue(app.pendingProfiles.isEmpty)
+    }
+
+    func testPendingProfileIsFoundForAnotherSpellingOfThePath() throws {
+        let app = try makeApp()
+        let file = directory.appendingPathComponent("Post.md")
+        try "x".write(to: file, atomically: true, encoding: .utf8)
+        app.handle(try request(app, profile: "Blog", paths: [directory.appendingPathComponent("post.md").path]))
+        XCTAssertEqual(app.pendingProfile(for: file), "Blog")
+    }
+
+    func testFailedOpenDropsPendingProfile() throws {
+        let app = try makeApp()
+        app.openDocument = { _, completion in completion(CocoaError(.fileReadNoSuchFile)) }
+        app.handle(try request(app, profile: "Blog", paths: ["/tmp/does-not-exist.md"]))
+        XCTAssertNil(app.pendingProfile(for: URL(fileURLWithPath: "/tmp/does-not-exist.md")))
     }
 }

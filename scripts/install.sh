@@ -18,6 +18,10 @@ if running; then
   print
   osascript -e 'tell application id "net.gaivo.Aaron" to quit'
   for i in {1..50}; do running || break; sleep 0.2; done
+  if running; then
+    print -u2 "Aaron is still running (maybe it is asking to save a document). Quit it, then run this again."
+    exit 1
+  fi
 fi
 
 if [[ -e $TARGET ]]; then

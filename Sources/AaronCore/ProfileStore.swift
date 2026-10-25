@@ -65,6 +65,11 @@ public struct ProfileStore: Sendable {
         if names().isEmpty {
             try save(.default, as: Self.initialProfileName)
         }
+        // Record the default, so adding a profile that sorts first doesn't
+        // silently make it the default.
+        if storedDefaultProfileName() == nil {
+            try setDefaultProfile(defaultProfileName())
+        }
     }
 
     public func names() -> [String] {
@@ -107,13 +112,15 @@ public struct ProfileStore: Sendable {
     }
 
     public func defaultProfileName() -> String {
-        let all = names()
-        if let data = try? Data(contentsOf: settingsURL),
-           let settings = try? JSONDecoder().decode(ProfileSettings.self, from: data),
-           let name = settings.defaultProfile, all.contains(name) {
-            return name
-        }
-        return all.first ?? Self.initialProfileName
+        storedDefaultProfileName() ?? names().first ?? Self.initialProfileName
+    }
+
+    /// The default named in `profiles.json`, if that profile exists.
+    private func storedDefaultProfileName() -> String? {
+        guard let data = try? Data(contentsOf: settingsURL),
+              let settings = try? JSONDecoder().decode(ProfileSettings.self, from: data),
+              let name = settings.defaultProfile, names().contains(name) else { return nil }
+        return name
     }
 
     public func setDefaultProfile(_ name: String) throws {

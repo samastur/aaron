@@ -7,7 +7,7 @@ struct CommandLineInstallerTests {
     var bin: URL { directory.appendingPathComponent("home/.local/bin") }
 
     func makeScript(_ name: String = "aaron") throws -> URL {
-        let url = directory.appendingPathComponent("App\(UUID().uuidString)/\(name)")
+        let url = directory.appendingPathComponent("A\(UUID().uuidString)/Aaron.app/Contents/Resources/\(name)")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/zsh\n".write(to: url, atomically: true, encoding: .utf8)
         return url
@@ -29,6 +29,16 @@ struct CommandLineInstallerTests {
         _ = try CommandLineInstaller.install(script: old, into: bin)
         let link = try CommandLineInstaller.install(script: new, into: bin)
         #expect(try destination(of: link) == new.path)
+    }
+
+    @Test func refusesSymlinkToAnotherTool() throws {
+        try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+        let existing = bin.appendingPathComponent("aaron")
+        try FileManager.default.createSymbolicLink(atPath: existing.path, withDestinationPath: "/usr/local/bin/other-aaron")
+        #expect(throws: InstallError.existingFile(existing)) {
+            try CommandLineInstaller.install(script: try makeScript(), into: bin)
+        }
+        #expect(try destination(of: existing) == "/usr/local/bin/other-aaron")
     }
 
     @Test func refusesRegularFile() throws {
