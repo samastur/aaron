@@ -1,7 +1,8 @@
 # Example: setting up a Pelican blog
 
 This walks through configuring Aaron for a Pelican blog whose repository
-lives at `~/blog` and contains these tools:
+lives at `~/blog` and has scripts like these (the names are examples;
+use your own):
 
 - `scripts/render-post`: renders one post with Pelican's theme and plugins in
   about 0.3 s,
@@ -39,8 +40,7 @@ Two external renderers, in **Settings ▸ Preview**:
 | Timeout | 30 s | 60 s |
 | Asset folder | `/articles/` → `~/blog/articles/output` | same |
 
-Both read the unsaved text from standard input (`-` for `scripts/render-post`,
-the default for `scripts/build-post`). `{relpath}` tells them where the post
+Both read the unsaved text from standard input. `{relpath}` tells them where the post
 sits in the content folder, so `{filename}` links resolve as on the site.
 The theme's styles, fonts and images are referenced as `/articles/…` and
 come from the last site build in `articles/output`. Run `make html` in

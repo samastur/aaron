@@ -13,7 +13,7 @@ session, so some checks are still outstanding.
 | Preview: built-in, external, renderer switching, errors, JavaScript blocking | smoke tests |
 | Review: run, read-only while running, accept, undo, dismiss, stale suggestions, failures, cancel | smoke tests |
 | Pelican: detection, tag loading, completion candidates, auto-completion trigger | smoke tests |
-| Real tools: `scripts/render-post`, `scripts/build-post`, `scripts/list-tags`, theme assets | harness runs with `docs/user/examples/pelican-blog.json` |
+| Real tools: a real Pelican blog's preview, full-build and tag scripts, theme assets | harness runs with a profile like `docs/user/examples/pelican-blog.json` |
 | Real AI: Claude and Codex return suggestions that resolve correctly | live tests, plus a Claude run on a 1,374-word post in the app (27 suggestions, all located) |
 | Light and dark mode: metadata key colours, review panel selection, built-in and external previews | harness snapshots with `AARON_APPEARANCE` (2026-10-24); see below for what snapshots can't show |
 | Release build compiles without the harness | `xcodebuild -configuration Release` |

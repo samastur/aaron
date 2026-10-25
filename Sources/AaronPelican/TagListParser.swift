@@ -12,8 +12,8 @@ public struct TagInfo: Equatable, Sendable {
 }
 
 /// Parses the output of the configured tag command. Accepted formats:
-/// `{"tags": [{"name": …, "count": …}]}` (as printed by `scripts/list-tags
-/// --json`), a JSON array of names or such objects, or plain text with one
+/// `{"tags": [{"name": …, "count": …}]}` (a tag-listing
+/// script's JSON output), a JSON array of names or such objects, or plain text with one
 /// tag per line, optionally preceded by its count.
 public enum TagListParser {
     public static func parse(_ output: String) throws -> [TagInfo] {
