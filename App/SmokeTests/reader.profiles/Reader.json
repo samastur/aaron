@@ -1,0 +1,9 @@
+{
+  "panes": {"editor": false, "preview": true, "review": false},
+  "aiProviders": [
+    {"id": "fake", "name": "Fake AI", "command": "/bin/sh '$FIXTURES/fake-ai.sh'", "timeoutSeconds": 20}
+  ],
+  "aiActions": [
+    {"id": "check", "name": "Check Everything", "prompt": "Check the text.", "providerID": "fake"}
+  ]
+}

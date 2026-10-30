@@ -18,11 +18,17 @@ struct AppCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
+            Button(window?.showEditor == true ? "Hide Editor" : "Show Editor") {
+                window?.showEditor.toggle()
+            }
+            .keyboardShortcut("e", modifiers: [.command, .option])
+            .disabled(window == nil || (window?.showEditor == true && window?.canHideEditor == false))
+
             Button(window?.showPreview == true ? "Hide Preview" : "Show Preview") {
                 window?.showPreview.toggle()
             }
             .keyboardShortcut("p", modifiers: [.command, .option])
-            .disabled(window == nil)
+            .disabled(window == nil || (window?.showPreview == true && window?.canHidePreview == false))
 
             Button("Refresh Preview") { window?.refreshPreview(immediately: true) }
                 .keyboardShortcut("r", modifiers: [.command, .shift])

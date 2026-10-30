@@ -18,10 +18,20 @@ final class DocumentWindowModel {
     private(set) var isPelican = false
     private(set) var statistics = TextStatistics(words: 0, characters: 0)
 
+    // Panes. The editor and the preview are never both hidden.
+    var showEditor = true {
+        didSet { if !showEditor && !showPreview { showEditor = true } }
+    }
+    var canHideEditor: Bool { showPreview }
+
     // Preview
     var showPreview = true {
-        didSet { if showPreview && !oldValue { refreshPreview() } }
+        didSet {
+            if !showPreview && !showEditor { showPreview = true }
+            if showPreview && !oldValue { refreshPreview() }
+        }
     }
+    var canHidePreview: Bool { showEditor }
     var rendererID = PreviewRendererConfig.builtinID {
         didSet { if rendererID != oldValue { refreshPreview(immediately: true) } }
     }
@@ -61,6 +71,7 @@ final class DocumentWindowModel {
         didSet {
             guard profileName != oldValue, !followingRename else { return }
             configurationChanged(from: appModel.configuration(for: oldValue))
+            applyPanes()
         }
     }
     @ObservationIgnored private var followingRename = false
@@ -86,6 +97,18 @@ final class DocumentWindowModel {
         profileName = name
         followingRename = false
         configurationChanged(from: previous)
+        applyPanes()
+    }
+
+    /// Shows the panes the profile asks for.
+    func applyPanes() {
+        let panes = configuration.panes.effective
+        // Show before hiding, so the editor and the preview are never both hidden.
+        if panes.editor { showEditor = true }
+        if panes.preview { showPreview = true }
+        showEditor = panes.editor
+        showPreview = panes.preview
+        showReview = panes.review
     }
 
     var availableRenderers: [(id: String, name: String)] {
@@ -103,6 +126,7 @@ final class DocumentWindowModel {
         if !rendererChosen {
             rendererChosen = true
             rendererID = configuration.defaultRendererID(isPelican: isPelican)
+            applyPanes()
         }
         refreshPreview(immediately: true)
     }

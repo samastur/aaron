@@ -59,6 +59,18 @@ struct ConfigurationTests {
         #expect(config.pelican.detection == .automatic)
     }
 
+    @Test func panesDefaultToEditorAndPreview() throws {
+        #expect(Configuration.default.panes == PaneSettings(editor: true, preview: true, review: false))
+        let config = try JSONDecoder().decode(Configuration.self, from: Data(#"{"panes": {"editor": false}}"#.utf8))
+        #expect(config.panes == PaneSettings(editor: false, preview: true, review: false))
+    }
+
+    @Test func effectivePanesNeverHideBothEditorAndPreview() {
+        #expect(PaneSettings(editor: false, preview: false, review: true).effective
+            == PaneSettings(editor: true, preview: false, review: true))
+        #expect(PaneSettings(editor: false, preview: true).effective == PaneSettings(editor: false, preview: true))
+    }
+
     @Test func expandsTildeInPaths() {
         #expect(PathExpansion.expand("~/blog") == NSHomeDirectory() + "/blog")
         #expect(PathExpansion.expand("/abs") == "/abs")

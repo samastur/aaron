@@ -4,6 +4,7 @@ import Foundation
 /// hand-edited file only needs to contain what differs from the defaults.
 public struct Configuration: Codable, Equatable, Sendable {
     public var editor = EditorSettings()
+    public var panes = PaneSettings()
     public var previewRenderers: [PreviewRendererConfig] = []
     public var defaultRenderer = DefaultRenderers()
     public var aiProviders: [AIProviderConfig] = Configuration.defaultProviders
@@ -30,12 +31,13 @@ public struct Configuration: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case editor, previewRenderers, defaultRenderer, aiProviders, aiActions, pelican
+        case editor, panes, previewRenderers, defaultRenderer, aiProviders, aiActions, pelican
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         editor = try c.decodeIfPresent(EditorSettings.self, forKey: .editor) ?? editor
+        panes = try c.decodeIfPresent(PaneSettings.self, forKey: .panes) ?? panes
         previewRenderers = try c.decodeIfPresent([PreviewRendererConfig].self, forKey: .previewRenderers) ?? previewRenderers
         defaultRenderer = try c.decodeIfPresent(DefaultRenderers.self, forKey: .defaultRenderer) ?? defaultRenderer
         aiProviders = try c.decodeIfPresent([AIProviderConfig].self, forKey: .aiProviders) ?? aiProviders
@@ -94,6 +96,37 @@ public struct EditorSettings: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey { case fontSize, monospaced }
+}
+
+/// Panes a window shows when it opens a file with this profile or
+/// switches to it.
+public struct PaneSettings: Codable, Equatable, Sendable {
+    public var editor = true
+    public var preview = true
+    public var review = false
+
+    public init(editor: Bool = true, preview: Bool = true, review: Bool = false) {
+        self.editor = editor
+        self.preview = preview
+        self.review = review
+    }
+
+    /// The settings with the editor shown when neither it nor the preview
+    /// is, which would leave the window empty.
+    public var effective: PaneSettings {
+        var panes = self
+        if !panes.editor && !panes.preview { panes.editor = true }
+        return panes
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        editor = try c.decodeIfPresent(Bool.self, forKey: .editor) ?? editor
+        preview = try c.decodeIfPresent(Bool.self, forKey: .preview) ?? preview
+        review = try c.decodeIfPresent(Bool.self, forKey: .review) ?? review
+    }
+
+    enum CodingKeys: String, CodingKey { case editor, preview, review }
 }
 
 /// Maps URLs requested by a preview page (`/articles/theme/x.css`) to a

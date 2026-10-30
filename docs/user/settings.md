@@ -15,6 +15,9 @@ Add, rename, delete and import profiles, and choose the default. See
 
 - **Font size** and **Use a monospaced font**: the editor's font
   ([Writing and editing](editing.md#editor-font)).
+- **Panes**: whether a window shows the **Editor**, the **Preview** and the
+  **AI review** panel when it opens a file with this profile or switches to
+  it ([Profiles](profiles.md#panes-shown-when-a-file-opens)).
 - **Profile file**: where the chosen profile is stored, with buttons to
   **Show in Finder**, **Reload All from Disk** (after editing files by hand)
   and **Restore Defaults…**. Restoring the defaults asks for confirmation and
@@ -74,6 +77,11 @@ Terminal:
     "fontSize": 16,
     "monospaced": false
   },
+  "panes": {
+    "editor": true,
+    "preview": true,
+    "review": false
+  },
   "previewRenderers": [
     {
       "id": "pelican",
@@ -114,6 +122,7 @@ Terminal:
 |---|---|---|
 | `editor.fontSize` | `16` | Editor font size in points; values outside 9–36 are treated as 9 or 36. |
 | `editor.monospaced` | `false` | Use a monospaced editor font. |
+| `panes.editor`, `panes.preview`, `panes.review` | `true`, `true`, `false` | Panes shown when a window opens a file with this profile or switches to it. If both `editor` and `preview` are `false`, the editor is shown. |
 | `previewRenderers` | `[]` | External renderers. `id` is any unique text (generated if missing), referenced by `defaultRenderer`. `command` is required. `workingDirectory` and `baseDirectory` are optional. `timeoutSeconds` defaults to 30. |
 | `previewRenderers[].assetMappings` | `[]` | `urlPrefix` → `directory` pairs, tried in order. Mappings with an empty `directory` are ignored. |
 | `previewRenderers[].allowsJavaScript` | `false` | Let scripts in the rendered page run. |
