@@ -8,6 +8,7 @@
 | ⌘S | Save | File |
 | ⌘, | Settings | Aaron |
 | ⇧⌘M | Markdown Help | Help |
+| ⌥⌘E | Show/Hide Editor | View |
 | ⌥⌘P | Show/Hide Preview | View |
 | ⇧⌘R | Refresh Preview | View |
 | ⌥⌘R | Show/Hide Review | View |

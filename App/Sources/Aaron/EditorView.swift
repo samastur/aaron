@@ -4,10 +4,56 @@ import AaronPelican
 import AppKit
 import SwiftUI
 
-/// Gives the window model access to the window's text view.
+/// Gives the window model access to the window's text view. The text view
+/// and its coordinator live as long as the window, not the editor pane, so
+/// AI actions and suggestions keep working while the editor is hidden.
 @MainActor
 final class EditorController {
     weak var textView: MarkdownTextView?
+    private(set) var scrollView: NSScrollView?
+    private(set) var coordinator: EditorView.Coordinator?
+
+    /// Creates the text view for a newly opened document.
+    func load(text: Binding<String>, model: DocumentWindowModel) {
+        guard scrollView == nil else { return }
+        let textView = EditorView.makeTextView()
+        let storage = textView.textStorage!
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .noBorder
+        scrollView.documentView = textView
+
+        let coordinator = EditorView.Coordinator(text: text, model: model)
+        coordinator.textView = textView
+        coordinator.settings = model.configuration.editor
+        textView.delegate = coordinator
+        storage.delegate = coordinator
+        textView.tagCompletionSource = { [weak coordinator] in coordinator?.model.tags ?? [] }
+        textView.isTagCompletionEnabled = { [weak coordinator] in coordinator?.model.isPelican ?? false }
+
+        textView.string = text.wrappedValue
+        coordinator.applySyntaxHighlighting()
+        textView.typingAttributes = coordinator.styles.base
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
+        self.textView = textView
+        self.scrollView = scrollView
+        self.coordinator = coordinator
+    }
+
+    /// Follows a change of the document made outside the editor, e.g.
+    /// File ▸ Revert.
+    func documentChanged(_ text: String) {
+        guard let textView, textView.string != text else { return }
+        // Deferred: replacing the text updates the model, which must not
+        // happen during a view update.
+        DispatchQueue.main.async { [weak self] in
+            guard let textView = self?.textView, let coordinator = self?.coordinator,
+                  textView.string != coordinator.text.wrappedValue else { return }
+            textView.string = coordinator.text.wrappedValue
+            coordinator.applySyntaxHighlighting()
+            coordinator.model.textChanged(textView.string)
+        }
+    }
 
     var currentText: String { textView?.string ?? "" }
     var selectedRange: NSRange { textView?.selectedRange() ?? NSRange(location: 0, length: 0) }
@@ -49,10 +95,6 @@ struct EditorView: NSViewRepresentable {
     let model: DocumentWindowModel
     let settings: EditorSettings
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, model: model)
-    }
-
     /// The editor's text view on a TextKit 1 stack, which lets suggestion
     /// highlights use temporary attributes.
     static func makeTextView() -> MarkdownTextView {
@@ -86,31 +128,19 @@ struct EditorView: NSViewRepresentable {
         return textView
     }
 
+    /// The window's coordinator, which outlives this view.
+    func makeCoordinator() -> Coordinator {
+        model.editor.load(text: $text, model: model)
+        return model.editor.coordinator!
+    }
+
     func makeNSView(context: Context) -> NSScrollView {
-        let textView = Self.makeTextView()
-        let storage = textView.textStorage!
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .noBorder
-        scrollView.documentView = textView
-
-        let coordinator = context.coordinator
-        coordinator.textView = textView
-        coordinator.settings = settings
-        textView.delegate = coordinator
-        storage.delegate = coordinator
-        textView.tagCompletionSource = { [weak coordinator] in coordinator?.model.tags ?? [] }
-        textView.isTagCompletionEnabled = { [weak coordinator] in coordinator?.model.isPelican ?? false }
-        model.editor.textView = textView
-
-        textView.string = text
-        coordinator.applySyntaxHighlighting()
-        textView.typingAttributes = coordinator.styles.base
-        DispatchQueue.main.async {
-            textView.setSelectedRange(NSRange(location: 0, length: 0))
-            textView.window?.makeFirstResponder(textView)
+        let editor = model.editor
+        // The same text view comes back each time the editor is shown.
+        if let textView = editor.textView {
+            DispatchQueue.main.async { textView.window?.makeFirstResponder(textView) }
         }
-        return scrollView
+        return editor.scrollView!
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
@@ -120,17 +150,7 @@ struct EditorView: NSViewRepresentable {
             coordinator.settings = settings
             coordinator.applySyntaxHighlighting()
         }
-        if textView.string != text {
-            // The document changed outside the editor, e.g. File ▸ Revert.
-            // Deferred: replacing the text updates the model, which must not
-            // happen during a view update.
-            DispatchQueue.main.async {
-                guard textView.string != coordinator.text.wrappedValue else { return }
-                textView.string = coordinator.text.wrappedValue
-                coordinator.applySyntaxHighlighting()
-                coordinator.model.textChanged(textView.string)
-            }
-        }
+        model.editor.documentChanged(text)
         textView.isEditable = !model.isRunningAction
         coordinator.applySuggestionHighlights(model.session.highlights, selected: model.selectedSuggestionID)
     }
@@ -138,7 +158,8 @@ struct EditorView: NSViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
         var text: Binding<String>
-        let model: DocumentWindowModel
+        // The model owns the editor controller, which owns this coordinator.
+        unowned let model: DocumentWindowModel
         weak var textView: MarkdownTextView?
         var settings = EditorSettings() {
             didSet { styles = EditorStyles(settings: settings) }

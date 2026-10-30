@@ -18,12 +18,31 @@ Choose another one in any of these places:
 - the **Profile** menu in the toolbar (slider icon),
 - **View ▸ Profile**.
 
-The whole window follows the new profile right away: Pelican detection and
-tags, the renderer menu and the preview, the AI actions, the editor font
-and Markdown Help. If the window's renderer doesn't exist in the new
+The whole window follows the new profile right away: the panes it shows,
+Pelican detection and tags, the renderer menu and the preview, the AI
+actions, the editor font and Markdown Help. If the window's renderer doesn't exist in the new
 profile, the preview switches to the built-in renderer. Review suggestions
 stay, because they belong to the text. An AI action that is already running
 finishes with the settings it started with.
+
+## Panes shown when a file opens
+
+**Settings ▸ General ▸ Panes** chooses which parts of the window a profile
+shows: the **Editor**, the **Preview** and the **AI review** panel. They
+apply when a window opens a file with the profile and when a window
+switches to it. Changing them doesn't rearrange windows that are already
+open. Afterwards you can still show or hide each pane yourself.
+
+To read Markdown rather than write it, for example documentation, make a
+profile with only **Preview** on. Its windows open as rendered pages; press
+⌥⌘E to bring the editor back when you want to change something.
+
+The editor and the preview can't both be off, since the window would be
+empty. While the editor is hidden, AI actions still run on the document,
+and accepted suggestions change it. To undo one, tick **Show handled** in
+the review panel and click **Revert**
+([AI review](review.md#changing-your-mind)); ⌘Z only works on changes made
+while the editor is shown.
 
 ## Managing profiles
 

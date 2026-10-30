@@ -1,0 +1,47 @@
+[
+ {
+  "wait": 1.5,
+  "waitIdle": true,
+  "expect": {"profile": "Default", "showEditor": true, "editorInWindow": true, "showPreview": true, "showReview": false}
+ },
+ {
+  "profile": "Reader",
+  "wait": 0.5,
+  "waitIdle": true,
+  "expect": {"showEditor": false, "editorInWindow": false, "showPreview": true, "showReview": false,
+             "previewContains": "<h1>Story</h1>"}
+ },
+ {
+  "preview": false,
+  "expect": {"showPreview": true, "showEditor": false}
+ },
+ {
+  "run": "check",
+  "waitIdle": true,
+  "expect": {"showReview": true, "aiError": false, "statuses": {"open": 2, "notFound": 1}}
+ },
+ {
+  "accept": 0,
+  "wait": 0.6,
+  "waitIdle": true,
+  "expect": {"textContains": "saw the quick", "previewContains": "saw the quick"}
+ },
+ {
+  "snapshot": "reader"
+ },
+ {
+  "profile": "Default",
+  "wait": 0.5,
+  "expect": {"showEditor": true, "editorInWindow": true, "showPreview": true, "showReview": false,
+             "textContains": "saw the quick"}
+ },
+ {
+  "preview": false,
+  "expect": {"showPreview": false, "showEditor": true}
+ },
+ {
+  "editor": false,
+  "expect": {"showPreview": false, "showEditor": true},
+  "quit": true
+ }
+]

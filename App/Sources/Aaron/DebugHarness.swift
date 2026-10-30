@@ -31,6 +31,7 @@ enum DebugHarness {
         /// Run the bundled `aaron` command with these arguments; `$WORK` is
         /// replaced by the smoke test's work folder.
         var cli: [String]?
+        var editor: Bool?
         var preview: Bool?
         var review: Bool?
         var snapshot: String?
@@ -60,6 +61,9 @@ enum DebugHarness {
         var previewTextContains: String?
         var previewTextLacks: String?
         var showPreview: Bool?
+        var showEditor: Bool?
+        /// The text view is on screen, not only kept for a hidden editor.
+        var editorInWindow: Bool?
         var windowCount: Int?
         var profile: String?
         /// Document file name → the profile of its window.
@@ -161,6 +165,7 @@ enum DebugHarness {
         if let renderer = step.renderer { model.rendererID = renderer }
         if let profile = step.profile { model.profileName = profile }
         if let arguments = step.cli { await runCommand(arguments) }
+        if let editor = step.editor { model.showEditor = editor }
         if let preview = step.preview { model.showPreview = preview }
 
         if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
@@ -264,6 +269,11 @@ enum DebugHarness {
             expect(!previewText.contains(value), "preview text contains \(value.debugDescription)")
         }
         if let value = e.showPreview { expect(model.showPreview == value, "showPreview is \(model.showPreview)") }
+        if let value = e.showEditor { expect(model.showEditor == value, "showEditor is \(model.showEditor)") }
+        if let value = e.editorInWindow {
+            let inWindow = model.editor.textView?.window != nil
+            expect(inWindow == value, "editor in window is \(inWindow)")
+        }
         let editors = NSApp.windows.compactMap { findTextView(in: $0.contentView) }
         if let value = e.windowCount { expect(editors.count == value, "document window count is \(editors.count)") }
         if let value = e.anyWindowTextStartsWith {
@@ -287,6 +297,7 @@ enum DebugHarness {
     }
 
     private static func snapshot(_ name: String, model: DocumentWindowModel, output: URL) async {
+        let documentWindow = model.editor.textView?.window ?? previewWebView?.window
         var previewImage: NSImage?
         if model.showPreview, let webView = previewWebView {
             previewImage = try? await webView.takeSnapshot(configuration: nil)
@@ -294,7 +305,7 @@ enum DebugHarness {
                 try? rep.representation(using: .png, properties: [:])?.write(to: output.appendingPathComponent("\(name)-preview.png"))
             }
         }
-        if let window = model.editor.textView?.window, let view = window.contentView?.superview ?? window.contentView,
+        if let window = documentWindow, let view = window.contentView?.superview ?? window.contentView,
            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
             view.cacheDisplay(in: view.bounds, to: rep)
             // cacheDisplay can't capture web views; paint the preview snapshot in.
@@ -310,7 +321,7 @@ enum DebugHarness {
             }
             try? rep.representation(using: .png, properties: [:])?.write(to: output.appendingPathComponent("\(name)-window.png"))
         }
-        if let controller = model.editor.textView?.window?.contentViewController {
+        if let controller = documentWindow?.contentViewController {
             var lines: [String] = []
             func walk(_ c: NSViewController, _ depth: Int) {
                 var line = String(repeating: "  ", count: depth) + "\(type(of: c))"
@@ -325,7 +336,7 @@ enum DebugHarness {
             walk(controller, 0)
             try? Data(lines.joined(separator: "\n").utf8).write(to: output.appendingPathComponent("\(name)-controllers.txt"))
         }
-        if let frame = model.editor.textView?.window?.contentView?.superview {
+        if let frame = documentWindow?.contentView?.superview {
             try? Data(hierarchy(frame).utf8).write(to: output.appendingPathComponent("\(name)-views.txt"))
         }
         var menus: [String] = []
@@ -336,7 +347,7 @@ enum DebugHarness {
         }
         try? Data(menus.joined(separator: "\n").utf8).write(to: output.appendingPathComponent("\(name)-menus.txt"))
         let state: [String: Any] = [
-            "windowIsKey": model.editor.textView?.window?.isKeyWindow ?? false,
+            "windowIsKey": documentWindow?.isKeyWindow ?? false,
             "appIsActive": NSApp.isActive,
             "text": model.editor.currentText,
             "selection": NSStringFromRange(model.editor.selectedRange),
@@ -345,9 +356,10 @@ enum DebugHarness {
             "autoCompletionCount": model.editor.textView?.debugAutoCompletionCount ?? 0,
             "tagCandidates": model.editor.textView?.debugTagCandidates.map { Array($0.prefix(10)) } ?? NSNull(),
             "showReview": model.showReview,
-            "windowVisible": model.editor.textView?.window?.occlusionState.contains(.visible) ?? false,
+            "windowVisible": documentWindow?.occlusionState.contains(.visible) ?? false,
+            "showEditor": model.showEditor,
             "showPreview": model.showPreview,
-            "windowFrame": NSStringFromRect(model.editor.textView?.window?.frame ?? .zero),
+            "windowFrame": NSStringFromRect(documentWindow?.frame ?? .zero),
             "words": model.statistics.words,
             "renderer": model.rendererID,
             "previewError": model.previewError ?? NSNull(),

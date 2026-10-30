@@ -84,6 +84,7 @@ Within a step, actions run first (in the order listed), then `wait`,
 | `"renderer": "id"` | switch preview renderer |
 | `"profile": "name"` | switch the window's profile |
 | `"cli": ["--profile", "x", "$WORK/a.md"]` | run the bundled `aaron` command (opens in the background, `AARON_OPEN_IN_BACKGROUND`); a nonzero exit is a failure |
+| `"editor": true/false` | show/hide the editor (runs before `preview`) |
 | `"preview": true/false` | show/hide the preview |
 | `"wait": seconds` | sleep |
 | `"waitIdle": true` | wait until no AI action runs and no preview is pending |
@@ -97,7 +98,9 @@ Expectation keys: `text`, `textContains`, `textLacks`, `isPelican`,
 `aiError` (bool), `aiNotice`, `tagCount`, `tagCandidatesStartWith`,
 `autoCompletionRequested`, `statuses` (counts by suggestion status, e.g.
 `{"open": 2, "notFound": 1}`), `selectedSuggestion` (original text),
-`showReview`, `showPreview`, `windowCount`, `anyWindowTextStartsWith`,
+`showReview`, `showPreview`, `showEditor`, `editorInWindow` (the text view
+is on screen, not only kept for a hidden editor), `windowCount` (counts
+windows whose editor is shown), `anyWindowTextStartsWith`,
 `profile`, `windowProfiles` (document file name → its window's profile),
 `menuItemEnabled` (menu path), `words`, `previewTextContains`, `previewTextLacks` (the
 rendered page's visible text, read with JavaScript from the app).

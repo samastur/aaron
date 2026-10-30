@@ -44,12 +44,17 @@ as Latin-1 if they are not valid UTF-8, and saved as UTF-8.
 
 A document window has up to three parts:
 
-1. **The editor** on the left.
+1. **The editor** on the left. Toggle it with the **Editor** toolbar button
+   or **View ▸ Show/Hide Editor** (⌥⌘E).
 2. **The preview** in the middle (or on the right when review is closed).
    Toggle it with the **Preview** toolbar button or **View ▸ Show/Hide
    Preview** (⌥⌘P). Drag the divider to resize it.
 3. **The review panel** on the right, for AI suggestions. Toggle it with the
    **Review** toolbar button or **View ▸ Show/Hide Review** (⌥⌘R).
+
+The editor and the preview can't both be hidden. Which parts a window shows
+when it opens is set per profile; see
+[Profiles](profiles.md#panes-shown-when-a-file-opens).
 
 The toolbar's **AI Actions** menu (sparkles icon) runs an AI action and opens
 the review panel. The status bar at the bottom shows word and character

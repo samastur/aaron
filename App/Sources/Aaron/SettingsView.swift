@@ -202,6 +202,22 @@ private struct GeneralSettings: View {
                 }
                 Toggle("Use a monospaced font", isOn: $appModel.settingsConfiguration.editor.monospaced)
             }
+            Section {
+                let panes = appModel.settingsConfiguration.panes
+                Toggle("Editor", isOn: $appModel.settingsConfiguration.panes.editor)
+                    .disabled(panes.editor && !panes.preview)
+                    .accessibilityIdentifier("panesEditor")
+                Toggle("Preview", isOn: $appModel.settingsConfiguration.panes.preview)
+                    .disabled(panes.preview && !panes.editor)
+                    .accessibilityIdentifier("panesPreview")
+                Toggle("AI review", isOn: $appModel.settingsConfiguration.panes.review)
+                    .accessibilityIdentifier("panesReview")
+            } header: {
+                Text("Panes")
+            } footer: {
+                Text("Shown when a window opens a file with this profile or switches to it. Turn off the editor to use Aaron as a reader.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Profile file") {
                 Text(appModel.profileURL(appModel.settingsProfileName).path)
                     .font(.callout.monospaced())

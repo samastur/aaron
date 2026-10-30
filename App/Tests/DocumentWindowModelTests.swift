@@ -265,4 +265,69 @@ final class DocumentWindowModelTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(1500))
         XCTAssertEqual(model.tags, [])
     }
+
+    // MARK: - Panes
+
+    /// An app with a "Reader" profile that opens with only the preview.
+    func readerApp() throws -> AppModel {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
+        let app = AppModel(store: ProfileStore(directory: directory))
+        let name = try app.addProfile(copying: app.defaultProfileName)
+        try app.renameProfile(name, to: "Reader")
+        var reader = app.configuration(for: "Reader")
+        reader.panes = PaneSettings(editor: false, preview: true, review: true)
+        app.setConfiguration(reader, for: "Reader")
+        return app
+    }
+
+    func testOpeningAFileShowsTheProfilePanes() throws {
+        let app = try readerApp()
+        let model = DocumentWindowModel(appModel: app, profileName: "Reader")
+        model.documentOpened(text: "Text", fileURL: nil)
+        XCTAssertFalse(model.showEditor)
+        XCTAssertTrue(model.showPreview)
+        XCTAssertTrue(model.showReview)
+    }
+
+    func testSwitchingProfileShowsItsPanes() throws {
+        let app = try readerApp()
+        let model = DocumentWindowModel(appModel: app)
+        model.documentOpened(text: "Text", fileURL: nil)
+        XCTAssertTrue(model.showEditor)
+        XCTAssertFalse(model.showReview)
+        model.profileName = "Reader"
+        XCTAssertFalse(model.showEditor)
+        XCTAssertTrue(model.showPreview)
+        XCTAssertTrue(model.showReview)
+        model.profileName = app.defaultProfileName
+        XCTAssertTrue(model.showEditor)
+        XCTAssertTrue(model.showPreview)
+        XCTAssertFalse(model.showReview)
+    }
+
+    func testEditingTheProfileLeavesOpenWindowsAlone() throws {
+        let app = try readerApp()
+        let model = DocumentWindowModel(appModel: app, profileName: "Reader")
+        app.register(model)
+        model.documentOpened(text: "Text", fileURL: nil)
+        model.showEditor = true
+        var reader = app.configuration(for: "Reader")
+        reader.editor.fontSize = 20
+        app.setConfiguration(reader, for: "Reader")
+        XCTAssertTrue(model.showEditor)
+    }
+
+    func testEditorAndPreviewAreNeverBothHidden() {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
+        let model = DocumentWindowModel(appModel: AppModel(store: ProfileStore(directory: directory)))
+        model.showPreview = false
+        XCTAssertFalse(model.canHideEditor)
+        model.showEditor = false
+        XCTAssertTrue(model.showEditor)
+        model.showPreview = true
+        model.showEditor = false
+        XCTAssertFalse(model.canHidePreview)
+        model.showPreview = false
+        XCTAssertTrue(model.showPreview)
+    }
 }

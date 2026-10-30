@@ -20,6 +20,7 @@ struct DocumentWindow: View {
             if model == nil {
                 let created = DocumentWindowModel(appModel: appModel, profileName: appModel.pendingProfile(for: fileURL))
                 appModel.register(created)
+                created.editor.load(text: $document.text, model: created)
                 created.documentOpened(text: document.text, fileURL: fileURL)
                 model = created
                 #if DEBUG
@@ -28,7 +29,10 @@ struct DocumentWindow: View {
             }
         }
         .onChange(of: fileURL) { _, url in model?.fileURLChanged(url) }
-        .onChange(of: document.text) { _, text in model?.textChanged(text) }
+        .onChange(of: document.text) { _, text in
+            model?.textChanged(text)
+            model?.editor.documentChanged(text)
+        }
     }
 }
 
@@ -41,8 +45,10 @@ private struct DocumentContent: View {
     var body: some View {
         VStack(spacing: 0) {
             HSplitView {
-                EditorView(text: $document.text, model: model, settings: model.configuration.editor)
-                    .frame(minWidth: 320, idealWidth: 640)
+                if model.showEditor {
+                    EditorView(text: $document.text, model: model, settings: model.configuration.editor)
+                        .frame(minWidth: 320, idealWidth: 640)
+                }
                 if model.showPreview {
                     PreviewPane(model: model)
                         .frame(minWidth: 280, idealWidth: 520)
@@ -57,9 +63,17 @@ private struct DocumentContent: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                Toggle(isOn: $model.showEditor) {
+                    Label("Editor", systemImage: "square.and.pencil")
+                }
+                .disabled(model.showEditor && !model.canHideEditor)
+                .help("Show or hide the editor (⌥⌘E)")
+                .accessibilityIdentifier("toggleEditor")
+
                 Toggle(isOn: $model.showPreview) {
                     Label("Preview", systemImage: "doc.richtext")
                 }
+                .disabled(model.showPreview && !model.canHidePreview)
                 .help("Show or hide the preview (⌥⌘P)")
                 .accessibilityIdentifier("togglePreview")
 
