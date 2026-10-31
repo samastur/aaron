@@ -3,6 +3,7 @@ import AaronCore
 import AaronFiles
 import AaronPelican
 import AaronPreview
+import AppKit
 import Foundation
 import Observation
 
@@ -14,6 +15,17 @@ final class DocumentWindowModel {
     let appModel: AppModel
     let editor = EditorController()
     let files: FilePanelModel
+    /// The window showing this model; set once it is on screen.
+    @ObservationIgnored weak var hostWindow: NSWindow? {
+        didSet {
+            if let hostWindow, let old = replacingWindow {
+                replacingWindow = nil
+                Self.take(placeOf: old, by: hostWindow)
+            }
+        }
+    }
+    /// The window this one replaces, from a file panel click.
+    @ObservationIgnored weak var replacingWindow: NSWindow?
 
     private(set) var text = ""
     private(set) var fileURL: URL?

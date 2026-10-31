@@ -18,10 +18,13 @@ struct DocumentWindow: View {
         }
         .onAppear {
             if model == nil {
-                let created = DocumentWindowModel(appModel: appModel, profileName: appModel.pendingProfile(for: fileURL))
+                let takeover = appModel.takeover(for: fileURL)
+                let created = DocumentWindowModel(appModel: appModel,
+                                                  profileName: takeover?.profile ?? appModel.pendingProfile(for: fileURL))
                 appModel.register(created)
                 created.editor.load(text: $document.text, model: created)
                 created.documentOpened(text: document.text, fileURL: fileURL)
+                if let takeover { created.adopt(takeover) }
                 model = created
                 #if DEBUG
                 DebugHarness.attach(created)
@@ -57,6 +60,7 @@ private struct DocumentContent: View {
             Divider()
             StatusBar(model: model)
         }
+        .background(WindowAccessor(model: model))
         .inspector(isPresented: $model.showReview) {
             SuggestionsPanel(model: model)
                 .inspectorColumnWidth(min: 280, ideal: 340, max: 520)

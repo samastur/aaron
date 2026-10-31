@@ -33,6 +33,8 @@ final class AppModel {
     @ObservationIgnored private var windowRefs: [WeakWindow] = []
     /// Profiles asked for by the `aaron` command, for files about to open.
     @ObservationIgnored var pendingProfiles: [(file: URL, profile: String)] = []
+    /// Windows opened from a file panel that take another window's place.
+    @ObservationIgnored var pendingTakeovers: [Takeover] = []
     /// Opens a file as a document and reports failure; replaced in tests.
     @ObservationIgnored var openDocument: (URL, @escaping (Error?) -> Void) -> Void = { url, completion in
         NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
