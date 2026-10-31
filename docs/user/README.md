@@ -8,6 +8,7 @@ Settings.
 
 - [Getting started](getting-started.md): install, first launch, the window
 - [Writing and editing](editing.md): documents, highlighting, status bar, find and spelling
+- [The file panel](files.md): the Markdown files under a profile's folder
 - [Preview](preview.md): the preview panel, built-in and external renderers
 - [AI review](review.md): running AI actions and working through suggestions
 - [Setting up AI actions and providers](ai-setup.md): prompts, Claude, Codex, web search

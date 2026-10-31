@@ -15,5 +15,6 @@
     {"id": "external-js", "name": "External with JavaScript", "command": "/bin/sh '$FIXTURES/fake-preview.sh'", "allowsJavaScript": true}
   ],
   "defaultRenderer": {"pelican": "external"},
+  "files": {"root": "$WORK"},
   "pelican": {"tagsCommand": "/bin/sh '$FIXTURES/fake-tags.sh'"}
 }

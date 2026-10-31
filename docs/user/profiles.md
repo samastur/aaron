@@ -19,6 +19,7 @@ Choose another one in any of these places:
 - **View ▸ Profile**.
 
 The whole window follows the new profile right away: the panes it shows,
+the file panel's root folder,
 Pelican detection and tags, the renderer menu and the preview, the AI
 actions, the editor font and Markdown Help. If the window's renderer doesn't exist in the new
 profile, the preview switches to the built-in renderer. Review suggestions
@@ -28,7 +29,8 @@ finishes with the settings it started with.
 ## Panes shown when a file opens
 
 **Settings ▸ General ▸ Panes** chooses which parts of the window a profile
-shows: the **Editor**, the **Preview** and the **AI review** panel. They
+shows: the **Editor**, the **Preview**, the **AI review** panel and the
+**Files** panel ([The file panel](files.md)). They
 apply when a window opens a file with the profile and when a window
 switches to it. Changing them doesn't rearrange windows that are already
 open. Afterwards you can still show or hide each pane yourself.

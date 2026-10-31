@@ -47,7 +47,8 @@ End-to-end checks of the real app that need **no** macOS automation
 permission: Debug builds contain a harness (`DebugHarness.swift`) that drives
 the first document window from a JSON step script and checks expectations
 from inside the app. Each scenario `App/SmokeTests/<name>.json` runs with
-`App/SmokeTests/config.json` as the profile *Default* (fake AI providers,
+`App/SmokeTests/config.json` as the profile *Default* (file panel root
+`$WORK`, the scenario's work folder; fake AI providers,
 renderers and tag command from `App/UITests/Fixtures`) on `<name>.md`, or
 `story.md` if there is none. Extra profiles for a scenario go in
 `App/SmokeTests/<name>.profiles/`, extra files for its work folder in
@@ -85,6 +86,8 @@ Within a step, actions run first (in the order listed), then `wait`,
 | `"profile": "name"` | switch the window's profile |
 | `"cli": ["--profile", "x", "$WORK/a.md"]` | run the bundled `aaron` command (opens in the background, `AARON_OPEN_IN_BACKGROUND`); a nonzero exit is a failure |
 | `"editor": true/false` | show/hide the editor (runs before `preview`) |
+| `"filter": "text"` | type into the file panel's filter |
+| `"openFile": "notes/a.md"` | open a file relative to the panel's root, as a click would; with `"newWindow": true` as a ⌘-click |
 | `"preview": true/false` | show/hide the preview |
 | `"wait": seconds` | sleep |
 | `"waitIdle": true` | wait until no AI action runs and no preview is pending |
@@ -98,7 +101,10 @@ Expectation keys: `text`, `textContains`, `textLacks`, `isPelican`,
 `aiError` (bool), `aiNotice`, `tagCount`, `tagCandidatesStartWith`,
 `autoCompletionRequested`, `statuses` (counts by suggestion status, e.g.
 `{"open": 2, "notFound": 1}`), `selectedSuggestion` (original text),
-`showReview`, `showPreview`, `showEditor`, `editorInWindow` (the text view
+`showReview`, `showPreview`, `showEditor`, `showFiles`, `filesStateIn` (the
+panel's state is one of these), `filesTopLevelContains`,
+`filesTopLevelLacks`, `filesMatches` (filter result names),
+`openWindowFiles` (file names of document windows on screen), `editorInWindow` (the text view
 is on screen, not only kept for a hidden editor), `windowCount` (counts
 windows whose editor is shown), `anyWindowTextStartsWith`,
 `profile`, `windowProfiles` (document file name → its window's profile),
@@ -163,3 +169,14 @@ not appear in the package, app unit or smoke tests.
 | `fake-preview.sh` | an external renderer wrapping the input in a marker page |
 | `failing-preview.sh` | a renderer that fails |
 | `fake-tags.sh` | a tag command printing three tags as JSON |
+
+### File panel and Spotlight
+
+Smoke-test work folders live in the temporary folder, which Spotlight
+doesn't index, so the `files` scenario exercises the fallback browsing.
+Spotlight itself was checked by hand on 2026-10-31: a Debug run with this
+repository's `docs` folder as root reached state `ready`, listed
+`developer`, `superpowers`, `user`, `decisions.md` and `README.md`, left
+out `user/examples` (only JSON inside), and the filter `PROFILE` found
+`profiles.md` and the two profile plan and spec files. Repeat that by
+pointing a profile's `files.root` at an indexed folder.

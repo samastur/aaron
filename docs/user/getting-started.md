@@ -42,14 +42,17 @@ as Latin-1 if they are not valid UTF-8, and saved as UTF-8.
 
 ![Window layout](images/window.png)
 
-A document window has up to three parts:
+A document window has up to four parts:
 
-1. **The editor** on the left. Toggle it with the **Editor** toolbar button
+1. **The file panel** on the left, listing the Markdown files in the
+   profile's folder ([The file panel](files.md)). Toggle it with the
+   **Files** toolbar button or **View ▸ Show/Hide Files** (⌃⌘S).
+2. **The editor**. Toggle it with the **Editor** toolbar button
    or **View ▸ Show/Hide Editor** (⌥⌘E).
-2. **The preview** in the middle (or on the right when review is closed).
+3. **The preview** in the middle (or on the right when review is closed).
    Toggle it with the **Preview** toolbar button or **View ▸ Show/Hide
    Preview** (⌥⌘P). Drag the divider to resize it.
-3. **The review panel** on the right, for AI suggestions. Toggle it with the
+4. **The review panel** on the right, for AI suggestions. Toggle it with the
    **Review** toolbar button or **View ▸ Show/Hide Review** (⌥⌘R).
 
 The editor and the preview can't both be hidden. Which parts a window shows

@@ -23,10 +23,10 @@ failed=0
 for name in $scenarios; do
   work=$(mktemp -d -t aaron-smoke)
   mkdir -p $work/support/Profiles
-  sed "s|\$FIXTURES|$FIXTURES|g" $SMOKE/config.json > $work/support/Profiles/Default.json
+  sed -e "s|\$FIXTURES|$FIXTURES|g" -e "s|\$WORK|$work|g" $SMOKE/config.json > $work/support/Profiles/Default.json
   # Extra profiles for a scenario: App/SmokeTests/<name>.profiles/*.json
   for profile in $SMOKE/$name.profiles/*.json(N); do
-    sed "s|\$FIXTURES|$FIXTURES|g" $profile > $work/support/Profiles/${profile:t}
+    sed -e "s|\$FIXTURES|$FIXTURES|g" -e "s|\$WORK|$work|g" $profile > $work/support/Profiles/${profile:t}
   done
   document=$SMOKE/story.md
   [[ -f $SMOKE/$name.md ]] && document=$SMOKE/$name.md

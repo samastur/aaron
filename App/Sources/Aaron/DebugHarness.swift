@@ -33,6 +33,12 @@ enum DebugHarness {
         var cli: [String]?
         var editor: Bool?
         var preview: Bool?
+        /// Open this file, relative to the file panel's root, as a click would.
+        var openFile: String?
+        /// With `openFile`: as a ⌘-click would.
+        var newWindow: Bool?
+        /// Type into the file panel's filter.
+        var filter: String?
         var review: Bool?
         var snapshot: String?
         var expect: Expectation?
@@ -62,6 +68,14 @@ enum DebugHarness {
         var previewTextLacks: String?
         var showPreview: Bool?
         var showEditor: Bool?
+        var showFiles: Bool?
+        /// The file panel's state is one of these.
+        var filesStateIn: [String]?
+        var filesTopLevelContains: [String]?
+        var filesTopLevelLacks: [String]?
+        var filesMatches: [String]?
+        /// File names of the document windows on screen.
+        var openWindowFiles: [String]?
         /// The text view is on screen, not only kept for a hidden editor.
         var editorInWindow: Bool?
         var windowCount: Int?
@@ -166,6 +180,11 @@ enum DebugHarness {
         if let profile = step.profile { model.profileName = profile }
         if let arguments = step.cli { await runCommand(arguments) }
         if let editor = step.editor { model.showEditor = editor }
+        if let filter = step.filter { model.files.filter = filter }
+        if let path = step.openFile {
+            model.appModel.openFromPanel(model.files.root.appendingPathComponent(path), from: model,
+                                         inNewWindow: step.newWindow ?? false)
+        }
         if let preview = step.preview { model.showPreview = preview }
 
         if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
@@ -270,6 +289,26 @@ enum DebugHarness {
         }
         if let value = e.showPreview { expect(model.showPreview == value, "showPreview is \(model.showPreview)") }
         if let value = e.showEditor { expect(model.showEditor == value, "showEditor is \(model.showEditor)") }
+        if let value = e.showFiles { expect(model.showFiles == value, "showFiles is \(model.showFiles)") }
+        if let value = e.filesStateIn {
+            expect(value.contains("\(model.files.state)"), "file panel state is \(model.files.state)")
+        }
+        let topLevel = model.files.nodes.map(\.name)
+        if let value = e.filesTopLevelContains {
+            expect(Set(value).isSubset(of: topLevel), "file panel top level is \(topLevel)")
+        }
+        if let value = e.filesTopLevelLacks {
+            expect(Set(value).isDisjoint(with: topLevel), "file panel top level is \(topLevel)")
+        }
+        if let value = e.filesMatches {
+            let names = model.files.matches.map(\.name)
+            expect(names == value, "file matches are \(names)")
+        }
+        if let value = e.openWindowFiles {
+            let names = model.appModel.windows.filter { $0.hostWindow?.isVisible == true }
+                .compactMap { $0.fileURL?.lastPathComponent }.sorted()
+            expect(names == value.sorted(), "open windows show \(names)")
+        }
         if let value = e.editorInWindow {
             let inWindow = model.editor.textView?.window != nil
             expect(inWindow == value, "editor in window is \(inWindow)")
@@ -358,6 +397,10 @@ enum DebugHarness {
             "showReview": model.showReview,
             "windowVisible": documentWindow?.occlusionState.contains(.visible) ?? false,
             "showEditor": model.showEditor,
+            "showFiles": model.showFiles,
+            "filesState": "\(model.files.state)",
+            "filesRoot": model.files.root.path,
+            "filesTopLevel": model.files.nodes.map(\.name),
             "showPreview": model.showPreview,
             "windowFrame": NSStringFromRect(documentWindow?.frame ?? .zero),
             "words": model.statistics.words,

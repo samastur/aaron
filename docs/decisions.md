@@ -194,3 +194,37 @@ Each one can be revisited.
 56. **The preview reloads after every finished render**, not only when the
     HTML changes, so Refresh Preview reads images and stylesheets again,
     e.g. after saving a new document next to its images.
+57. **The file panel finds files with Spotlight**, one live query per
+    window limited to the profile's root, instead of walking folders or
+    running `find`/`fd`. It is fast even for a home folder and follows
+    changes on its own; the cost is that unindexed places (hidden folders,
+    some drives, folders excluded from Spotlight) aren't listed. The filter
+    matches file names only, against the files that query found.
+58. **When Spotlight doesn't index the root, the panel browses folders
+    instead.** "Not indexed" means a query for any item under the root
+    returns nothing; an indexed root without Markdown files says "No
+    Markdown files here" instead. In this mode the filter is off and
+    nothing is watched for changes; the panel decides once per start.
+59. **Hidden includes what macOS hides** (`isHidden`, e.g. `~/Library`),
+    not only dot names, and `node_modules` is ignored by default: both
+    otherwise fill a home-folder root with bundled README files. iCloud
+    Drive is shown as its own top entry so notes there stay reachable.
+60. **Clicking a file opens it in a new document window that takes the old
+    window's place**, then closes the old window: SwiftUI's document
+    windows hold one document each. The new window gets the old one's
+    profile, panes, open folders and filter, its frame or its tab; in full
+    screen the switch may show. The old window closes the normal way, so
+    an untitled document with text still asks to be saved.
+61. **Replacing a document asks before losing review work** (open
+    suggestions or a running action), with **Open in New Window** as the
+    default button. ⌘-click and middle click never ask.
+62. **The file panel is on by default**, also for profiles written before
+    it existed, with the home folder as root; extensions default to `md`
+    and `markdown`.
+63. **Folder lists are sorted like Finder** (folders first,
+    `localizedStandardCompare`), filter results show the folder relative
+    to the root, ↓ moves from the filter into the results and Return
+    opens; arrow keys in the tree only move the selection.
+64. **A folder's identity in the panel is its path string**, not its URL:
+    a folder URL may or may not end in a slash, which makes equal folders
+    compare unequal.

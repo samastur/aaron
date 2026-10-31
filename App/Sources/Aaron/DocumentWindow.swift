@@ -50,7 +50,7 @@ private struct DocumentContent: View {
             HSplitView {
                 if model.showFiles {
                     FilePanel(model: model)
-                        .frame(minWidth: 200, idealWidth: 260, maxWidth: 480)
+                        .frame(minWidth: 200, idealWidth: 260, maxWidth: 360)
                 }
                 if model.showEditor {
                     EditorView(text: $document.text, model: model, settings: model.configuration.editor)
