@@ -18,6 +18,12 @@ struct AppCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
+            Button(window?.showFiles == true ? "Hide Files" : "Show Files") {
+                window?.showFiles.toggle()
+            }
+            .keyboardShortcut("s", modifiers: [.command, .control])
+            .disabled(window == nil)
+
             Button(window?.showEditor == true ? "Hide Editor" : "Show Editor") {
                 window?.showEditor.toggle()
             }

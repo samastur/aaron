@@ -48,6 +48,10 @@ private struct DocumentContent: View {
     var body: some View {
         VStack(spacing: 0) {
             HSplitView {
+                if model.showFiles {
+                    FilePanel(model: model)
+                        .frame(minWidth: 200, idealWidth: 260, maxWidth: 480)
+                }
                 if model.showEditor {
                     EditorView(text: $document.text, model: model, settings: model.configuration.editor)
                         .frame(minWidth: 320, idealWidth: 640)
@@ -67,6 +71,12 @@ private struct DocumentContent: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                Toggle(isOn: $model.showFiles) {
+                    Label("Files", systemImage: "sidebar.left")
+                }
+                .help("Show or hide the file panel (⌃⌘S)")
+                .accessibilityIdentifier("toggleFiles")
+
                 Toggle(isOn: $model.showEditor) {
                     Label("Editor", systemImage: "square.and.pencil")
                 }

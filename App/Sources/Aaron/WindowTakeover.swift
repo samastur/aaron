@@ -29,7 +29,7 @@ extension AppModel {
     @discardableResult
     func openFromPanel(_ file: URL, from window: DocumentWindowModel, inNewWindow: Bool) -> PanelOpenResult {
         if let current = window.fileURL, Self.isSameFile(current, file) { return .nothing }
-        if let other = windows.first(where: { $0 !== window && $0.fileURL.map { Self.isSameFile($0, file) } == true }) {
+        if let other = windowShowing(file), other !== window {
             other.hostWindow?.makeKeyAndOrderFront(nil)
             return .broughtForward
         }
@@ -49,6 +49,18 @@ extension AppModel {
             if error != nil { self?.pendingTakeovers.removeAll { Self.isSameFile($0.file, file) } }
         }
         return .replaced
+    }
+
+    /// The window that shows this file, if any.
+    func windowShowing(_ file: URL) -> DocumentWindowModel? {
+        windows.first { $0.fileURL.map { Self.isSameFile($0, file) } == true }
+    }
+
+    /// Changes a profile's file panel root; nil means the home folder.
+    func setFileRoot(_ url: URL?, for profile: String) {
+        var configuration = configuration(for: profile)
+        configuration.files.root = url.map { ($0.path as NSString).abbreviatingWithTildeInPath } ?? "~"
+        setConfiguration(configuration, for: profile)
     }
 
     /// The takeover waiting for this file's window; returned once.

@@ -212,10 +212,30 @@ private struct GeneralSettings: View {
                     .accessibilityIdentifier("panesPreview")
                 Toggle("AI review", isOn: $appModel.settingsConfiguration.panes.review)
                     .accessibilityIdentifier("panesReview")
+                Toggle("Files", isOn: $appModel.settingsConfiguration.panes.files)
+                    .accessibilityIdentifier("panesFiles")
             } header: {
                 Text("Panes")
             } footer: {
                 Text("Shown when a window opens a file with this profile or switches to it. Turn off the editor to use Aaron as a reader.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
+                LabeledContent("Root folder") {
+                    HStack {
+                        TextField("", text: $appModel.settingsConfiguration.files.root, prompt: Text("~"))
+                            .accessibilityIdentifier("filesRoot")
+                        Button("Choose…") { chooseRoot() }
+                    }
+                }
+                TextField("Extensions", text: listBinding($appModel.settingsConfiguration.files.extensions))
+                    .accessibilityIdentifier("filesExtensions")
+                TextField("Ignored folders", text: listBinding($appModel.settingsConfiguration.files.ignoredFolders))
+                    .accessibilityIdentifier("filesIgnored")
+            } header: {
+                Text("Files")
+            } footer: {
+                Text("The file panel lists files with these extensions below the root folder. Separate entries with commas.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Profile file") {
@@ -242,6 +262,25 @@ private struct GeneralSettings: View {
     }
 
     @State private var confirmReset = false
+
+    /// Edits a list as comma-separated text.
+    private func listBinding(_ list: Binding<[String]>) -> Binding<String> {
+        Binding(get: { list.wrappedValue.joined(separator: ", ") },
+                set: { list.wrappedValue = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } })
+    }
+
+    private func chooseRoot() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.directoryURL = appModel.settingsConfiguration.files.rootURL
+        panel.prompt = "Use as Root"
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                appModel.setFileRoot(url, for: appModel.settingsProfileName)
+            }
+        }
+    }
 }
 
 // MARK: - Preview
