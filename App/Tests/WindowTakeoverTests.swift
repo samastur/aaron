@@ -92,6 +92,39 @@ final class WindowTakeoverTests: XCTestCase {
         XCTAssertTrue(second.files.expanded.contains("/x"))
     }
 
+    func testStaleTakeoverExpires() {
+        let first = window("a.md")
+        app.openFromPanel(file("c.md"), from: first, inNewWindow: false)
+        XCTAssertNil(app.takeover(for: file("c.md"), now: Date().addingTimeInterval(60)))
+    }
+
+    /// Refuses to close, like a window asking whether to save.
+    final class RefusingDelegate: NSObject, NSWindowDelegate {
+        func windowShouldClose(_ sender: NSWindow) -> Bool { false }
+    }
+
+    func testOldWindowThatAsksStaysInFront() {
+        let old = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 500, height: 400),
+                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        let new = NSWindow(contentRect: NSRect(x: 300, y: 300, width: 200, height: 200),
+                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        old.isReleasedWhenClosed = false
+        new.isReleasedWhenClosed = false
+        let delegate = RefusingDelegate()
+        old.delegate = delegate
+        old.orderFront(nil)
+        new.orderFront(nil)
+        DocumentWindowModel.take(placeOf: old, by: new)
+        XCTAssertEqual(new.frame, old.frame)
+        XCTAssertTrue(old.isVisible)
+        let order = NSApp.orderedWindows
+        XCTAssertLessThan(order.firstIndex(of: old) ?? .max, order.firstIndex(of: new) ?? .max,
+                          "the window asking must be in front of its replacement")
+        old.close()
+        new.close()
+        withExtendedLifetime(delegate) {}
+    }
+
     func suggestion(_ status: Suggestion.Status) -> Suggestion {
         Suggestion(id: UUID(), actionName: "A", original: "x", replacement: "y", message: "", category: nil,
                    range: nil, status: status)

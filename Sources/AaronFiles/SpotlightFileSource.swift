@@ -8,6 +8,14 @@ public final class SpotlightFileSource: FileSource {
     /// Checks whether Spotlight indexes the root at all.
     private var probe: NSMetadataQuery?
     private var observers: [NSObjectProtocol] = []
+    /// Results are read here, not on the main thread: a large root has
+    /// tens of thousands of them.
+    private let queue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        queue.qualityOfService = .userInitiated
+        return queue
+    }()
 
     public init() {}
 
@@ -22,14 +30,14 @@ public final class SpotlightFileSource: FileSource {
         })
         // Large roots report many results; deliver them in batches.
         query.notificationBatchingInterval = 0.5
-        observe(.NSMetadataQueryGatheringProgress, of: query) { update(.progress(Self.urls(of: $0))) }
-        observe(.NSMetadataQueryDidUpdate, of: query) { update(.updated(Self.urls(of: $0))) }
-        observe(.NSMetadataQueryDidFinishGathering, of: query) { [weak self] query in
-            let urls = Self.urls(of: query)
-            if urls.isEmpty {
+        query.operationQueue = queue
+        observe(.NSMetadataQueryGatheringProgress, of: query) { .progress($0) } handle: { update($0) }
+        observe(.NSMetadataQueryDidUpdate, of: query) { .updated($0) } handle: { update($0) }
+        observe(.NSMetadataQueryDidFinishGathering, of: query) { .finished($0) } handle: { [weak self] event in
+            if event == .finished([]) {
                 self?.checkIndexed(root, update: update)
             } else {
-                update(.finished(urls))
+                update(event)
             }
         }
         self.query = query
@@ -51,26 +59,31 @@ public final class SpotlightFileSource: FileSource {
         let probe = NSMetadataQuery()
         probe.searchScopes = [root]
         probe.predicate = NSPredicate(format: "%K LIKE %@", NSMetadataItemFSNameKey, "*")
-        observe(.NSMetadataQueryDidFinishGathering, of: probe) { [weak self] probe in
-            let indexed = probe.resultCount > 0
-            probe.stop()
+        probe.operationQueue = queue
+        observe(.NSMetadataQueryDidFinishGathering, of: probe) { urls in
+            urls.isEmpty ? .notIndexed : .finished([])
+        } handle: { [weak self] event in
+            self?.probe?.stop()
             self?.probe = nil
-            update(indexed ? .finished([]) : .notIndexed)
+            update(event)
         }
         self.probe = probe
         probe.start()
     }
 
+    /// Reads the results on the query's queue, then hands the event to the
+    /// main thread in order.
     private func observe(_ name: Notification.Name, of query: NSMetadataQuery,
-                         _ handler: @escaping @MainActor (NSMetadataQuery) -> Void) {
-        observers.append(NotificationCenter.default.addObserver(forName: name, object: query, queue: .main) { note in
+                         event: @escaping @Sendable ([URL]) -> FileSourceEvent,
+                         handle: @escaping @MainActor (FileSourceEvent) -> Void) {
+        observers.append(NotificationCenter.default.addObserver(forName: name, object: query, queue: queue) { note in
             guard let query = note.object as? NSMetadataQuery else { return }
-            nonisolated(unsafe) let sendable = query
-            MainActor.assumeIsolated { handler(sendable) }
+            let result = event(Self.urls(of: query))
+            DispatchQueue.main.async { MainActor.assumeIsolated { handle(result) } }
         })
     }
 
-    private static func urls(of query: NSMetadataQuery) -> [URL] {
+    private nonisolated static func urls(of query: NSMetadataQuery) -> [URL] {
         query.disableUpdates()
         defer { query.enableUpdates() }
         return (0..<query.resultCount).compactMap { index in

@@ -46,13 +46,17 @@ struct FilePanel: View {
         .onChange(of: model.fileURL, initial: true) { _, url in treeSelection = url }
         .alert(confirmTitle, isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
                presenting: confirming) { url in
-            Button("Open in New Window") { appModel.openFromPanel(url, from: model, inNewWindow: true) }
-                .keyboardShortcut(.defaultAction)
+            Button("Open in New Window") {
+                appModel.openFromPanel(url, from: model, inNewWindow: true)
+                showOwnFile()
+            }
+            .keyboardShortcut(.defaultAction)
             Button("Replace", role: .destructive) {
                 if model.isRunningAction { model.cancelAction() }
                 appModel.openFromPanel(url, from: model, inNewWindow: false)
+                showOwnFile()
             }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel", role: .cancel) { showOwnFile() }
         } message: { _ in
             Text(model.reviewLossMessage)
         }
@@ -158,6 +162,16 @@ struct FilePanel: View {
             return
         }
         appModel.openFromPanel(url, from: model, inNewWindow: inNewWindow)
+        showOwnFile()
+    }
+
+    /// Selects the window's own document again. Selection opens files only
+    /// when it changes, so leaving another file selected (after ⌘-click,
+    /// Cancel, or a close that was cancelled) would make clicking it again
+    /// do nothing.
+    private func showOwnFile() {
+        treeSelection = model.fileURL
+        matchSelection = nil
     }
 
     private func chooseRoot() {

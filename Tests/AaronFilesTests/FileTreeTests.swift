@@ -56,6 +56,13 @@ struct FileTreeTests {
         #expect(outline(tree) == ["c.md"])
     }
 
+    @Test func reportsOnlyVisibleFiles() {
+        let tree = builder(hidden: ["/r/Library"]).buildTree(
+            files(["node_modules/x.md", ".git/y.md", "Library/z.md", "a/ok.md"]))
+        #expect(tree.files.map(\.path) == ["/r/a/ok.md"])
+        #expect(outline(tree.nodes) == ["a/", "  ok.md"])
+    }
+
     @Test func keepsUnusualNames() {
         let tree = builder().build(files(["ščž #1.md", "100% done.md", "Čež.md", "čez.md"]))
         #expect(tree.count == 4)

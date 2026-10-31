@@ -51,17 +51,40 @@ public enum FileNode: Identifiable, Hashable, Sendable {
     }
 }
 
+/// The tree and the files it shows.
+public struct FileTree: Sendable {
+    public var nodes: [FileNode]
+    /// The files that are in the tree: not hidden, ignored or outside the root.
+    public var files: [URL]
+}
+
+/// Remembers which folders macOS hides, across tree builds; safe to use
+/// from any thread.
+public final class HiddenFolderCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var hidden: [String: Bool] = [:]
+
+    public init() {}
+
+    public func isHidden(_ folder: URL) -> Bool {
+        if let known = lock.withLock({ hidden[folder.path] }) { return known }
+        let value = FileTreeBuilder.isHiddenOnDisk(folder)
+        lock.withLock { hidden[folder.path] = value }
+        return value
+    }
+}
+
 /// Builds the tree of folders leading to the given files: a folder exists
 /// only when a file is somewhere below it.
-public struct FileTreeBuilder {
+public struct FileTreeBuilder: Sendable {
     public static let iCloudDriveName = "iCloud Drive"
 
     let root: URL
     let ignoredFolders: Set<String>
     let iCloudDrive: URL?
-    let isHidden: (URL) -> Bool
+    let isHidden: @Sendable (URL) -> Bool
 
-    public init(root: URL, ignoredFolders: [String], iCloudDrive: URL?, isHidden: @escaping (URL) -> Bool) {
+    public init(root: URL, ignoredFolders: [String], iCloudDrive: URL?, isHidden: @escaping @Sendable (URL) -> Bool) {
         self.root = root.standardizedFileURL
         self.ignoredFolders = Set(ignoredFolders)
         self.iCloudDrive = iCloudDrive?.standardizedFileURL
@@ -84,7 +107,9 @@ public struct FileTreeBuilder {
         var files: [URL] = []
     }
 
-    public func build(_ files: [URL]) -> [FileNode] {
+    public func build(_ files: [URL]) -> [FileNode] { buildTree(files).nodes }
+
+    public func buildTree(_ files: [URL]) -> FileTree {
         let rootComponents = root.pathComponents
         let iCloudComponents = iCloudDrive.map(\.pathComponents)
         // iCloud Drive is shown on its own when it is below the root.
@@ -94,6 +119,7 @@ public struct FileTreeBuilder {
         let top = Folder()
         let iCloud = Folder()
         var hiddenCache: [String: Bool] = [:]
+        var visibleFiles: [URL] = []
 
         for file in files {
             let components = file.standardizedFileURL.pathComponents
@@ -126,7 +152,10 @@ public struct FileTreeBuilder {
                     folder = next
                 }
             }
-            if visible { folder.files.append(file) }
+            if visible {
+                folder.files.append(file)
+                visibleFiles.append(file)
+            }
         }
 
         func nodes(_ folder: Folder, at url: URL) -> [FileNode] {
@@ -145,7 +174,7 @@ public struct FileTreeBuilder {
                                                  children: children, isICloudDrive: true)), at: 0)
             }
         }
-        return result
+        return FileTree(nodes: result, files: visibleFiles)
     }
 }
 

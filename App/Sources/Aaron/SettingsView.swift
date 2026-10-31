@@ -223,15 +223,19 @@ private struct GeneralSettings: View {
             Section {
                 LabeledContent("Root folder") {
                     HStack {
-                        TextField("", text: $appModel.settingsConfiguration.files.root, prompt: Text("~"))
+                        CommittingTextField(text: $appModel.settingsConfiguration.files.root, prompt: "~")
                             .accessibilityIdentifier("filesRoot")
                         Button("Choose…") { chooseRoot() }
                     }
                 }
-                TextField("Extensions", text: listBinding($appModel.settingsConfiguration.files.extensions))
-                    .accessibilityIdentifier("filesExtensions")
-                TextField("Ignored folders", text: listBinding($appModel.settingsConfiguration.files.ignoredFolders))
-                    .accessibilityIdentifier("filesIgnored")
+                LabeledContent("Extensions") {
+                    CommittingTextField(text: listBinding($appModel.settingsConfiguration.files.extensions))
+                        .accessibilityIdentifier("filesExtensions")
+                }
+                LabeledContent("Ignored folders") {
+                    CommittingTextField(text: listBinding($appModel.settingsConfiguration.files.ignoredFolders))
+                        .accessibilityIdentifier("filesIgnored")
+                }
             } header: {
                 Text("Files")
             } footer: {
@@ -266,7 +270,8 @@ private struct GeneralSettings: View {
     /// Edits a list as comma-separated text.
     private func listBinding(_ list: Binding<[String]>) -> Binding<String> {
         Binding(get: { list.wrappedValue.joined(separator: ", ") },
-                set: { list.wrappedValue = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } })
+                set: { list.wrappedValue = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty } })
     }
 
     private func chooseRoot() {
@@ -605,5 +610,28 @@ private struct ItemListEditor<Item: Identifiable, Detail: View>: View where Item
         let target = index + offset
         guard items.indices.contains(target) else { return }
         items.swapAt(index, target)
+    }
+}
+
+/// A text field that saves its text on Return or when it loses focus, not
+/// on every keystroke: the file panel restarts its search for each change.
+private struct CommittingTextField: View {
+    @Binding var text: String
+    var prompt = ""
+    @State private var draft = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        TextField("", text: $draft, prompt: Text(prompt))
+            .labelsHidden()
+            .focused($focused)
+            .onSubmit(commit)
+            .onChange(of: focused) { _, isFocused in if !isFocused { commit() } }
+            .onChange(of: text, initial: true) { _, value in if !focused { draft = value } }
+    }
+
+    private func commit() {
+        if draft != text { text = draft }
+        draft = text
     }
 }

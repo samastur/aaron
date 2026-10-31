@@ -12,6 +12,11 @@ struct Takeover {
     var expanded: Set<String>
     var filter: String
     weak var replacing: NSWindow?
+    /// A takeover nobody picked up soon after (e.g. the document was
+    /// already open) must not hijack a later, unrelated open.
+    var created = Date()
+
+    static let lifetime: TimeInterval = 10
 }
 
 enum PanelOpenResult: Equatable {
@@ -64,7 +69,8 @@ extension AppModel {
     }
 
     /// The takeover waiting for this file's window; returned once.
-    func takeover(for fileURL: URL?) -> Takeover? {
+    func takeover(for fileURL: URL?, now: Date = Date()) -> Takeover? {
+        pendingTakeovers.removeAll { now.timeIntervalSince($0.created) > Takeover.lifetime }
         guard let fileURL,
               let index = pendingTakeovers.firstIndex(where: { Self.isSameFile($0.file, fileURL) }) else { return nil }
         return pendingTakeovers.remove(at: index)
@@ -91,14 +97,23 @@ extension DocumentWindowModel {
     }
 
     /// Puts the new window where the replaced one was and closes that one.
-    /// Closing may ask to save an untitled document; cancelling keeps both.
+    /// Closing may ask to save an untitled document, so the old window
+    /// stays in front until it is gone; cancelling keeps both.
     static func take(placeOf old: NSWindow, by new: NSWindow) {
         if let tabs = old.tabbedWindows, tabs.count > 1 {
             old.addTabbedWindow(new, ordered: .above)
         } else {
             new.setFrame(old.frame, display: true)
         }
-        new.makeKeyAndOrderFront(nil)
+        new.orderFront(nil)
+        old.makeKeyAndOrderFront(nil)
+        let closing = NotificationCenter.default.notifications(named: NSWindow.willCloseNotification, object: old)
+        Task { [weak new] in
+            for await _ in closing {
+                new?.makeKeyAndOrderFront(nil)
+                break
+            }
+        }
         old.performClose(nil)
     }
 

@@ -41,6 +41,13 @@ final class FilePanelModel {
     @ObservationIgnored private var source: FileSource?
     @ObservationIgnored private var isActive = false
     @ObservationIgnored private var revealed: URL?
+    @ObservationIgnored private var hiddenFolders = HiddenFolderCache()
+    /// Trees are built off the main thread, one at a time, always from the
+    /// latest results.
+    @ObservationIgnored private var buildTask: Task<Void, Never>?
+    @ObservationIgnored private var queued: (urls: [URL], final: Bool)?
+    /// Changes on restart, so a tree built for the old root is dropped.
+    @ObservationIgnored private var generation = 0
 
     init(makeSource: @escaping () -> FileSource) {
         self.makeSource = makeSource
@@ -74,15 +81,21 @@ final class FilePanelModel {
         folderContents[folder.standardizedFileURL.path] ?? []
     }
 
+    /// Returns once the tree for the latest results is shown.
+    func waitForTree() async {
+        while let task = buildTask { await task.value }
+    }
+
     private func restart() {
         stopSource()
+        cancelBuilds()
+        hiddenFolders = HiddenFolderCache()
         nodes = []
         files = []
         folderContents = [:]
         matches = []
         root = settings.rootURL.standardizedFileURL
-        var isFolder: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isFolder), isFolder.boolValue else {
+        guard rootExists else {
             state = .missing
             return
         }
@@ -95,6 +108,12 @@ final class FilePanelModel {
         }
     }
 
+    private func cancelBuilds() {
+        generation += 1
+        buildTask = nil
+        queued = nil
+    }
+
     private func stopSource() {
         source?.stop()
         source = nil
@@ -103,11 +122,20 @@ final class FilePanelModel {
     private func handle(_ event: FileSourceEvent) {
         switch event {
         case .progress(let urls):
-            update(urls)
+            update(urls, final: false)
         case .finished(let urls), .updated(let urls):
-            update(urls)
-            state = urls.isEmpty ? .empty : .ready
+            guard rootExists else {
+                // Deleted or renamed while shown.
+                cancelBuilds()
+                state = .missing
+                nodes = []
+                files = []
+                matches = []
+                return
+            }
+            update(urls, final: true)
         case .notIndexed:
+            cancelBuilds()
             state = .fallback
             files = []
             matches = []
@@ -116,11 +144,37 @@ final class FilePanelModel {
         }
     }
 
-    private func update(_ urls: [URL]) {
-        files = urls
-        nodes = FileTreeBuilder(root: root, ignoredFolders: settings.ignoredFolders,
-                                iCloudDrive: FileTreeBuilder.defaultICloudDrive,
-                                isHidden: FileTreeBuilder.isHiddenOnDisk).build(urls)
+    private var rootExists: Bool {
+        var isFolder: ObjCBool = false
+        return FileManager.default.fileExists(atPath: root.path, isDirectory: &isFolder) && isFolder.boolValue
+    }
+
+    private func update(_ urls: [URL], final: Bool) {
+        queued = (urls, final)
+        if buildTask == nil { buildNext() }
+    }
+
+    private func buildNext() {
+        guard let next = queued else { return }
+        queued = nil
+        let hidden = hiddenFolders
+        let builder = FileTreeBuilder(root: root, ignoredFolders: settings.ignoredFolders,
+                                      iCloudDrive: FileTreeBuilder.defaultICloudDrive,
+                                      isHidden: { hidden.isHidden($0) })
+        let generation = generation
+        buildTask = Task { [weak self] in
+            let tree = await Task.detached(priority: .userInitiated) { builder.buildTree(next.urls) }.value
+            guard let self, generation == self.generation else { return }
+            self.show(tree, final: next.final)
+            self.buildTask = nil
+            self.buildNext()
+        }
+    }
+
+    private func show(_ tree: FileTree, final: Bool) {
+        nodes = tree.nodes
+        files = tree.files
+        if final { state = tree.files.isEmpty ? .empty : .ready }
         updateMatches()
         expandRevealed()
     }

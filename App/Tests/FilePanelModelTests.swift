@@ -42,47 +42,53 @@ final class FilePanelModelTests: XCTestCase {
 
     func file(_ path: String) -> URL { root.appendingPathComponent(path) }
 
-    func testStartsSourceOnRootWithExtensions() {
+    /// Sends an event and waits until the tree built from it is shown.
+    func send(_ event: FileSourceEvent) async {
+        source.send(event)
+        await panel.waitForTree()
+    }
+
+    func testStartsSourceOnRootWithExtensions() async {
         XCTAssertEqual(source.started.count, 1)
         XCTAssertEqual(source.started.first?.root.standardizedFileURL, root.standardizedFileURL)
         XCTAssertEqual(source.started.first?.extensions, ["md", "markdown"])
         XCTAssertEqual(panel.state, .loading)
     }
 
-    func testFinishedResultsBuildTree() {
-        source.send(.progress([file("a/one.md")]))
+    func testFinishedResultsBuildTree() async {
+        await send(.progress([file("a/one.md")]))
         XCTAssertEqual(panel.state, .loading)
         XCTAssertEqual(panel.nodes.map(\.name), ["a"])
-        source.send(.finished([file("a/one.md"), file("two.md")]))
+        await send(.finished([file("a/one.md"), file("two.md")]))
         XCTAssertEqual(panel.state, .ready)
         XCTAssertEqual(panel.nodes.map(\.name), ["a", "two.md"])
     }
 
-    func testEmptyIndexedRootShowsEmpty() {
-        source.send(.finished([]))
+    func testEmptyIndexedRootShowsEmpty() async {
+        await send(.finished([]))
         XCTAssertEqual(panel.state, .empty)
     }
 
-    func testRevealExpandsAncestors() {
-        source.send(.finished([file("a/b/one.md")]))
+    func testRevealExpandsAncestors() async {
+        await send(.finished([file("a/b/one.md")]))
         panel.reveal(file("a/b/one.md"))
         XCTAssertTrue(panel.expanded.contains(file("a").path))
         XCTAssertTrue(panel.expanded.contains(file("a/b").path))
     }
 
-    func testFilterUsesFoundFiles() {
-        source.send(.finished([file("a/Notes.md"), file("other.md")]))
+    func testFilterUsesFoundFiles() async {
+        await send(.finished([file("a/Notes.md"), file("other.md")]))
         panel.filter = "note"
         XCTAssertEqual(panel.matches.map(\.name), ["Notes.md"])
-        source.send(.updated([file("a/Notes.md"), file("more notes.md")]))
+        await send(.updated([file("a/Notes.md"), file("more notes.md")]))
         XCTAssertEqual(Set(panel.matches.map(\.name)), ["Notes.md", "more notes.md"])
     }
 
-    func testNotIndexedSwitchesToFallback() throws {
+    func testNotIndexedSwitchesToFallback() async throws {
         try FileManager.default.createDirectory(at: file("sub"), withIntermediateDirectories: true)
         try Data().write(to: file("sub/x.md"))
         try Data().write(to: file("top.md"))
-        source.send(.notIndexed)
+        await send(.notIndexed)
         XCTAssertEqual(panel.state, .fallback)
         XCTAssertFalse(panel.isFilterEnabled)
         XCTAssertEqual(panel.nodes.map(\.name), ["sub", "top.md"])
@@ -94,7 +100,7 @@ final class FilePanelModelTests: XCTestCase {
         XCTAssertTrue(panel.matches.isEmpty)
     }
 
-    func testMissingRootShowsMissing() {
+    func testMissingRootShowsMissing() async {
         let source = FakeFileSource()
         let panel = FilePanelModel(makeSource: { source })
         var settings = FileSettings()
@@ -105,7 +111,7 @@ final class FilePanelModelTests: XCTestCase {
         XCTAssertTrue(source.started.isEmpty)
     }
 
-    func testReconfigureRestartsSource() {
+    func testReconfigureRestartsSource() async {
         var settings = FileSettings()
         settings.root = root.path
         panel.configure(settings)
@@ -116,14 +122,45 @@ final class FilePanelModelTests: XCTestCase {
         XCTAssertEqual(source.started.last?.extensions, ["txt"])
     }
 
-    func testHidingStopsSource() {
+    func testFilterSkipsHiddenAndIgnoredFiles() async {
+        await send(.finished([file("node_modules/pkg/readme.md"), file(".git/readme.md"), file("a/readme.md")]))
+        panel.filter = "readme"
+        XCTAssertEqual(panel.matches.map(\.url.path), [file("a/readme.md").path])
+    }
+
+    func testLargeResultsAreBuiltOffTheMainThread() async {
+        let urls = (0..<20_000).map { file("f\($0 % 50)/g\($0 % 7)/note\($0).md") }
+        let start = Date()
+        source.send(.finished(urls))
+        XCTAssertLessThan(Date().timeIntervalSince(start), 0.05, "handling an event must not build the tree")
+        await panel.waitForTree()
+        XCTAssertEqual(panel.nodes.count, 50)
+        XCTAssertEqual(panel.state, .ready)
+    }
+
+    func testLatestResultsWin() async {
+        source.send(.progress([file("old.md")]))
+        source.send(.finished([file("new.md")]))
+        await panel.waitForTree()
+        XCTAssertEqual(panel.nodes.map(\.name), ["new.md"])
+        XCTAssertEqual(panel.state, .ready)
+    }
+
+    func testRootDeletedWhileShownShowsMissing() async throws {
+        await send(.finished([file("a.md")]))
+        try FileManager.default.removeItem(at: root)
+        await send(.updated([]))
+        XCTAssertEqual(panel.state, .missing)
+    }
+
+    func testHidingStopsSource() async {
         panel.setActive(false)
         XCTAssertEqual(source.stopped, 1)
         panel.setActive(true)
         XCTAssertEqual(source.started.count, 2)
     }
 
-    func testProfileSwitchAppliesFilesPane() throws {
+    func testProfileSwitchAppliesFilesPane() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("dwm-\(UUID().uuidString)")
         let app = AppModel(store: ProfileStore(directory: directory))
         let name = try app.addProfile(copying: app.defaultProfileName)
