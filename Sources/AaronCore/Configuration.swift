@@ -5,6 +5,7 @@ import Foundation
 public struct Configuration: Codable, Equatable, Sendable {
     public var editor = EditorSettings()
     public var panes = PaneSettings()
+    public var files = FileSettings()
     public var previewRenderers: [PreviewRendererConfig] = []
     public var defaultRenderer = DefaultRenderers()
     public var aiProviders: [AIProviderConfig] = Configuration.defaultProviders
@@ -31,13 +32,14 @@ public struct Configuration: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case editor, panes, previewRenderers, defaultRenderer, aiProviders, aiActions, pelican
+        case editor, panes, files, previewRenderers, defaultRenderer, aiProviders, aiActions, pelican
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         editor = try c.decodeIfPresent(EditorSettings.self, forKey: .editor) ?? editor
         panes = try c.decodeIfPresent(PaneSettings.self, forKey: .panes) ?? panes
+        files = try c.decodeIfPresent(FileSettings.self, forKey: .files) ?? files
         previewRenderers = try c.decodeIfPresent([PreviewRendererConfig].self, forKey: .previewRenderers) ?? previewRenderers
         defaultRenderer = try c.decodeIfPresent(DefaultRenderers.self, forKey: .defaultRenderer) ?? defaultRenderer
         aiProviders = try c.decodeIfPresent([AIProviderConfig].self, forKey: .aiProviders) ?? aiProviders
@@ -104,11 +106,14 @@ public struct PaneSettings: Codable, Equatable, Sendable {
     public var editor = true
     public var preview = true
     public var review = false
+    /// The file panel; not counted for the editor-or-preview rule.
+    public var files = true
 
-    public init(editor: Bool = true, preview: Bool = true, review: Bool = false) {
+    public init(editor: Bool = true, preview: Bool = true, review: Bool = false, files: Bool = true) {
         self.editor = editor
         self.preview = preview
         self.review = review
+        self.files = files
     }
 
     /// The settings with the editor shown when neither it nor the preview
@@ -124,9 +129,44 @@ public struct PaneSettings: Codable, Equatable, Sendable {
         editor = try c.decodeIfPresent(Bool.self, forKey: .editor) ?? editor
         preview = try c.decodeIfPresent(Bool.self, forKey: .preview) ?? preview
         review = try c.decodeIfPresent(Bool.self, forKey: .review) ?? review
+        files = try c.decodeIfPresent(Bool.self, forKey: .files) ?? files
     }
 
-    enum CodingKeys: String, CodingKey { case editor, preview, review }
+    enum CodingKeys: String, CodingKey { case editor, preview, review, files }
+}
+
+/// The file panel's root folder and which files it lists.
+public struct FileSettings: Codable, Equatable, Sendable {
+    public static let defaultExtensions = ["md", "markdown"]
+
+    /// Empty or `~` means the home folder.
+    public var root = "~"
+    public var extensions = FileSettings.defaultExtensions
+    /// Folders with these names are left out, with everything below them.
+    public var ignoredFolders = ["node_modules"]
+
+    public init() {}
+
+    public var rootURL: URL {
+        PathExpansion.url(root) ?? URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+    }
+
+    /// Lowercased, without dots; the defaults when none are left.
+    public var normalizedExtensions: Set<String> {
+        let cleaned = extensions.map {
+            $0.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()
+        }.filter { !$0.isEmpty }
+        return Set(cleaned.isEmpty ? Self.defaultExtensions : cleaned)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        root = try c.decodeIfPresent(String.self, forKey: .root) ?? root
+        extensions = try c.decodeIfPresent([String].self, forKey: .extensions) ?? extensions
+        ignoredFolders = try c.decodeIfPresent([String].self, forKey: .ignoredFolders) ?? ignoredFolders
+    }
+
+    enum CodingKeys: String, CodingKey { case root, extensions, ignoredFolders }
 }
 
 /// Maps URLs requested by a preview page (`/articles/theme/x.css`) to a

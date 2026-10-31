@@ -71,6 +71,46 @@ struct ConfigurationTests {
         #expect(PaneSettings(editor: false, preview: true).effective == PaneSettings(editor: false, preview: true))
     }
 
+    @Test func panesFilesDefaultsOn() throws {
+        #expect(Configuration.default.panes.files)
+        let config = try JSONDecoder().decode(Configuration.self, from: Data(#"{"panes": {"editor": false}}"#.utf8))
+        #expect(config.panes.files)
+    }
+
+    @Test func fileSettingsDefaults() {
+        let files = Configuration.default.files
+        #expect(files.root == "~")
+        #expect(files.extensions == ["md", "markdown"])
+        #expect(files.ignoredFolders == ["node_modules"])
+    }
+
+    @Test func effectiveExtensionsNormalise() {
+        var files = FileSettings()
+        files.extensions = [".MD", " markdown", ""]
+        #expect(files.normalizedExtensions == ["md", "markdown"])
+        files.extensions = []
+        #expect(files.normalizedExtensions == ["md", "markdown"])
+        files.extensions = ["txt"]
+        #expect(files.normalizedExtensions == ["txt"])
+    }
+
+    @Test func rootURLExpandsTildeAndEmpty() {
+        var files = FileSettings()
+        let home = URL(fileURLWithPath: NSHomeDirectory())
+        #expect(files.rootURL.standardizedFileURL == home.standardizedFileURL)
+        files.root = ""
+        #expect(files.rootURL.standardizedFileURL == home.standardizedFileURL)
+        files.root = "~/blog"
+        #expect(files.rootURL.path == NSHomeDirectory() + "/blog")
+    }
+
+    @Test func fileSettingsDecodePartially() throws {
+        let json = #"{"files": {"root": "~/docs"}}"#
+        let config = try JSONDecoder().decode(Configuration.self, from: Data(json.utf8))
+        #expect(config.files.root == "~/docs")
+        #expect(config.files.extensions == ["md", "markdown"])
+    }
+
     @Test func expandsTildeInPaths() {
         #expect(PathExpansion.expand("~/blog") == NSHomeDirectory() + "/blog")
         #expect(PathExpansion.expand("/abs") == "/abs")
