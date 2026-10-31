@@ -40,6 +40,8 @@ targets:
         product: AaronPelican
       - package: AaronKit
         product: AaronHelp
+      - package: AaronKit
+        product: AaronFiles
     settings:
       base:
         PRODUCT_NAME: Aaron

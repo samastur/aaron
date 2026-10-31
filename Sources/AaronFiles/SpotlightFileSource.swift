@@ -11,6 +11,8 @@ public final class SpotlightFileSource: FileSource {
 
     public init() {}
 
+    isolated deinit { stop() }
+
     public func start(root: URL, extensions: Set<String>, update: @escaping @MainActor (FileSourceEvent) -> Void) {
         stop()
         let query = NSMetadataQuery()

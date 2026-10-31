@@ -1,5 +1,6 @@
 import AaronAI
 import AaronCore
+import AaronFiles
 import AaronPelican
 import AaronPreview
 import Foundation
@@ -12,13 +13,18 @@ import Observation
 final class DocumentWindowModel {
     let appModel: AppModel
     let editor = EditorController()
+    let files: FilePanelModel
 
     private(set) var text = ""
     private(set) var fileURL: URL?
     private(set) var isPelican = false
     private(set) var statistics = TextStatistics(words: 0, characters: 0)
 
-    // Panes. The editor and the preview are never both hidden.
+    // Panes. The editor and the preview are never both hidden; the file
+    // panel doesn't count.
+    var showFiles = true {
+        didSet { files.setActive(showFiles) }
+    }
     var showEditor = true {
         didSet { if !showEditor && !showPreview { showEditor = true } }
     }
@@ -76,9 +82,11 @@ final class DocumentWindowModel {
     }
     @ObservationIgnored private var followingRename = false
 
-    init(appModel: AppModel, profileName: String? = nil) {
+    init(appModel: AppModel, profileName: String? = nil,
+         fileSource: @escaping () -> FileSource = { SpotlightFileSource() }) {
         self.appModel = appModel
         self.profileName = profileName ?? appModel.defaultProfileName
+        files = FilePanelModel(makeSource: fileSource)
     }
 
     var configuration: Configuration { appModel.configuration(for: profileName) }
@@ -109,6 +117,7 @@ final class DocumentWindowModel {
         showEditor = panes.editor
         showPreview = panes.preview
         showReview = panes.review
+        showFiles = panes.files
     }
 
     var availableRenderers: [(id: String, name: String)] {
@@ -122,6 +131,8 @@ final class DocumentWindowModel {
 
     func documentOpened(text: String, fileURL: URL?) {
         self.fileURL = fileURL
+        files.configure(configuration.files)
+        files.reveal(fileURL)
         textChanged(text)
         if !rendererChosen {
             rendererChosen = true
@@ -134,6 +145,7 @@ final class DocumentWindowModel {
     func fileURLChanged(_ url: URL?) {
         guard url != fileURL else { return }
         fileURL = url
+        files.reveal(url)
         tagsLoadedFor = nil
         loadTagsIfNeeded()
         refreshPreview()
@@ -151,6 +163,7 @@ final class DocumentWindowModel {
 
     func configurationChanged(from old: Configuration) {
         let new = configuration
+        if old.files != new.files { files.configure(new.files) }
         if old.pelican != new.pelican {
             isPelican = PelicanDetector.isPelican(text, detection: new.pelican.detection)
             loadTagsIfNeeded()
