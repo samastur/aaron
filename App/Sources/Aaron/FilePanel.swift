@@ -157,7 +157,7 @@ struct FilePanel: View {
     }
 
     private func openFile(_ url: URL, inNewWindow: Bool) {
-        if !inNewWindow, model.hasUnfinishedReview, appModel.windowShowing(url) == nil {
+        if !inNewWindow, model.hasUnfinishedReview, !(model.fileURL.map { AppModel.isSameFile($0, url) } ?? false) {
             confirming = url
             return
         }

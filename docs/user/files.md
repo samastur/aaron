@@ -48,8 +48,11 @@ one; Esc clears the filter and brings the tree back.
   panes, open folders and filter.
 - **⌘-click** or **middle-click** a file, or choose **Open in New Window**
   from its context menu, to open it in a new window.
-- A file that is already open in another window brings that window to the
-  front.
+- A file that is already open in another window opens again, so you can
+  read one part while editing another (see
+  [Windows and tabs](windows-and-tabs.md)). Use ⌘-click or **Open in New
+  Window** on the window's own file for a second copy of it; a plain click
+  on it does nothing.
 
 If the window has AI suggestions you haven't accepted or dismissed yet, or
 an AI action is running, opening another file in the same window would

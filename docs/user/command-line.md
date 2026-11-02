@@ -13,8 +13,8 @@ aaron --help
   exist; if one doesn't, `aaron` says which and opens none of them.
 - **`--profile NAME`** opens the files with that [profile](profiles.md)
   instead of the default. Case doesn't matter. An unknown name is an error
-  that lists the profiles. A file that is already open comes to the front
-  and its window switches to the profile.
+  that lists the profiles. A file that is already open opens again in a new
+  window with the profile; the window that had it open keeps its own.
 - **`--list-profiles`** prints the profiles, marking the default.
 
 It exits with status 0 on success, 1 for a missing file, an unknown profile

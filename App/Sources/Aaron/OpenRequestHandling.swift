@@ -26,13 +26,10 @@ extension AppModel {
         }
         for path in request.paths {
             let file = URL(fileURLWithPath: path).standardizedFileURL
+            // An open file opens again, as a new copy with the profile.
             if let profile {
-                if let window = windows.first(where: { $0.fileURL.map { Self.isSameFile($0, file) } ?? false }) {
-                    window.profileName = profile
-                } else {
-                    pendingProfiles.removeAll { Self.isSameFile($0.file, file) }
-                    pendingProfiles.append((file, profile))
-                }
+                pendingProfiles.removeAll { Self.isSameFile($0.file, file) }
+                pendingProfiles.append((file, profile))
             }
             openDocument(file) { [weak self] error in
                 // Don't let a later, unrelated open pick up the profile.

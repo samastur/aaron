@@ -33,13 +33,20 @@ final class WindowTakeoverTests: XCTestCase {
         XCTAssertTrue(opened.isEmpty)
     }
 
-    func testAlreadyOpenFileIsNotReopened() {
+    func testFileOpenElsewhereOpensAgain() {
         let first = window("a.md")
         let second = window("b.md")
-        XCTAssertEqual(app.openFromPanel(file("b.md"), from: first, inNewWindow: false), .broughtForward)
-        XCTAssertEqual(app.openFromPanel(file("b.md"), from: first, inNewWindow: true), .broughtForward)
-        XCTAssertTrue(opened.isEmpty)
+        XCTAssertEqual(app.openFromPanel(file("b.md"), from: first, inNewWindow: false), .replaced)
+        XCTAssertEqual(app.openFromPanel(file("b.md"), from: first, inNewWindow: true), .newWindow)
+        XCTAssertEqual(opened, [file("b.md"), file("b.md")])
         withExtendedLifetime(second) {}
+    }
+
+    func testOwnFileInNewWindowOpensCopy() {
+        let first = window("a.md")
+        XCTAssertEqual(app.openFromPanel(file("a.md"), from: first, inNewWindow: true), .newWindow)
+        XCTAssertEqual(opened, [file("a.md")])
+        XCTAssertEqual(app.pendingProfile(for: file("a.md")), first.profileName)
     }
 
     func testNewWindowCarriesProfile() throws {
