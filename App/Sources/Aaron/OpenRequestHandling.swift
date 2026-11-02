@@ -9,6 +9,7 @@ extension AppModel {
     /// the command's token are ignored: a web page or another app must not
     /// be able to open files and so run a profile's commands on them.
     func handle(_ url: URL) {
+        receivedOpenRequest = true
         guard let request = OpenRequest(url: url) else {
             logger.warning("Ignored malformed request \(url.absoluteString, privacy: .public)")
             return

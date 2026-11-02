@@ -54,9 +54,20 @@ struct CommandScriptTests {
         let help = try run(["--help"])
         #expect(help.status == 0)
         #expect(help.stdout.contains("--profile"))
+    }
+
+    @Test func withoutArgumentsStartsAaron() throws {
         let none = try run([])
-        #expect(none.status == 2)
-        #expect(none.stderr.contains("usage"))
+        #expect(none.status == 0)
+        #expect(none.stdout == "start\n", "dry run reports a plain start, with no request")
+    }
+
+    @Test func profileWithoutFilesAsksForAnUntitledDocument() throws {
+        let result = try run(["--profile", "default"])
+        #expect(result.status == 0)
+        let request = try #require(OpenRequest(url: URL(string: result.stdout.trimmingCharacters(in: .whitespacesAndNewlines))!))
+        #expect(request.profile == "Default")
+        #expect(request.paths.isEmpty)
     }
 
     @Test func missingFileFailsAndOpensNothing() throws {

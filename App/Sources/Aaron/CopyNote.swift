@@ -17,6 +17,7 @@ extension AppModel {
     func windowClosed(_ window: DocumentWindowModel) {
         unregister(window)
         refreshCopies()
+        scheduleSessionSave()
     }
 }
 

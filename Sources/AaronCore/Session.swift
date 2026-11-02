@@ -62,7 +62,27 @@ public enum LaunchKind: Equatable, Sendable {
     /// the files.
     public static let commandLineFlag = "--aaron-cli-launch"
 
-    public static func decide(isDefaultLaunch: Bool, arguments: [String]) -> LaunchKind {
-        isDefaultLaunch && !arguments.contains(commandLineFlag) ? .normal : .withRequest
+    /// `openedSomething`: a file or an `aaron://` request arrived during
+    /// launch (macOS reports a launch with files given as arguments as a
+    /// default one).
+    public static func decide(isDefaultLaunch: Bool, arguments: [String], openedSomething: Bool = false) -> LaunchKind {
+        isDefaultLaunch && !openedSomething && !arguments.contains(commandLineFlag) && files(in: arguments).isEmpty
+            ? .normal : .withRequest
+    }
+
+    /// Files given as arguments (macOS opens them), skipping `-Key value`
+    /// options.
+    static func files(in arguments: [String]) -> [String] {
+        var files: [String] = []
+        var index = 1
+        while index < arguments.count {
+            if arguments[index].hasPrefix("-") {
+                index += arguments[index] == commandLineFlag ? 1 : 2
+            } else {
+                files.append(arguments[index])
+                index += 1
+            }
+        }
+        return files
     }
 }

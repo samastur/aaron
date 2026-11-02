@@ -35,6 +35,40 @@ struct AaronApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appModel = AppModel.makeDefault()
 
+    override init() {
+        // Aaron reopens windows itself (see SessionRestore.swift); macOS's
+        // own window restoration would bring back windows from a start with
+        // a file too, and keeps untitled documents without asking.
+        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        super.init()
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let isDefault = notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool ?? false
+        let opened = appModel.receivedOpenRequest || NSDocumentController.shared.documents.contains { $0.fileURL != nil }
+        appModel.launchKind = LaunchKind.decide(isDefaultLaunch: isDefault, arguments: ProcessInfo.processInfo.arguments,
+                                                openedSomething: opened)
+        guard appModel.sessionToRestore() != nil else { return appModel.scheduleSessionSave() }
+        Task {
+            // Files and requests can arrive just after launch finishes.
+            try? await Task.sleep(for: .milliseconds(300))
+            if appModel.receivedOpenRequest || NSDocumentController.shared.documents.contains(where: { $0.fileURL != nil }) {
+                appModel.launchKind = .withRequest
+                return
+            }
+            guard let session = appModel.sessionToRestore() else { return }
+            // Instead of the untitled window a start with nothing to open shows.
+            let untitled = NSDocumentController.shared.documents.filter { $0.fileURL == nil && !$0.isDocumentEdited }
+            await appModel.restore(session)
+            for document in untitled { document.close() }
+        }
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        appModel.stopSavingSession()
+        return .terminateNow
+    }
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Before files given at launch are opened.
         DocumentReopening.enable()

@@ -130,6 +130,14 @@ private struct ProfilesSettings: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                Section("Startup (all profiles)") {
+                    Toggle("Reopen windows from last time", isOn: $appModel.reopenWindows)
+                        .accessibilityIdentifier("reopenWindows")
+                    Text("When Aaron starts without being asked to open a file or a profile, it reopens the "
+                         + "windows and tabs it had open, each with its profile.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
             .formStyle(.grouped)
         }

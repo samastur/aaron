@@ -6,12 +6,15 @@ emulate -L zsh
 setopt err_return no_unset
 
 usage() {
-  print -r -- "usage: aaron [--profile NAME] FILE...
+  print -r -- "usage: aaron [--profile NAME] [FILE...]
        aaron --list-profiles
        aaron --help
 
 Opens each FILE in Aaron, starting it if needed, and returns right away.
-  --profile NAME   open the files with profile NAME instead of the default
+Without arguments, starts Aaron (reopening the last session's windows) or
+brings it to the front.
+  --profile NAME   open the files with profile NAME instead of the default;
+                   without files, open a new document with it
   --list-profiles  list the profiles; the default is marked"
 }
 
@@ -68,7 +71,15 @@ while (( $# )); do
     *) files+=("$1"); shift ;;
   esac
 done
-(( ${#files} )) || { usage >&2; exit 2 }
+# Without arguments: start Aaron as from the Dock, so it restores its session.
+if (( ! ${#files} )) && [[ -z $profile ]]; then
+  if [[ -n ${AARON_CLI_DRY_RUN:-} ]]; then
+    print start
+  else
+    /usr/bin/open ${AARON_OPEN_IN_BACKGROUND:+-g} -a "$app"
+  fi
+  exit 0
+fi
 
 # Check every file before opening any.
 paths=()
@@ -77,10 +88,12 @@ for f in $files; do
   paths+=("${f:a}")
 done
 
-# The app creates its profiles and the token on first launch.
+# The app creates its profiles and the token on first launch. The flag tells
+# it that it was started to open something, so it doesn't restore its
+# last session.
 token_file="$support/cli-token"
 if [[ ! -s $token_file ]]; then
-  [[ -n ${AARON_CLI_DRY_RUN:-} ]] || /usr/bin/open -g -a "$app"
+  [[ -n ${AARON_CLI_DRY_RUN:-} ]] || /usr/bin/open -g -a "$app" --args --aaron-cli-launch
   for i in {1..150}; do [[ -s $token_file ]] && break; sleep 0.1; done
   [[ -s $token_file ]] || die "Aaron did not start (no $token_file)"
 fi

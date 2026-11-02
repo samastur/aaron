@@ -121,6 +121,14 @@ enum DebugHarness {
         /// File names of the window's tabs in order; "Untitled" for none.
         var tabFiles: [String]?
         var tabProfiles: [String]?
+        /// File names of the visible document windows, by tab group in tab
+        /// order; groups sorted by their first file.
+        var tabGroups: [[String]]?
+        /// The session Aaron would save now: file names by group.
+        var currentSessionTabs: [[String]]?
+        var currentSessionProfiles: [[String]]?
+        /// "normal" or "withRequest".
+        var launchKind: String?
         /// Key → titles of the menu items with ⌘ and that key.
         var commandKeyOwners: [String: [String]]?
         /// Whether the other copies of the file show the note.
@@ -441,6 +449,32 @@ enum DebugHarness {
         if let value = e.tabProfiles {
             let names = tabs.map(\.profileName)
             expect(names == value, "tab profiles are \(names)")
+        }
+        if let value = e.tabGroups {
+            var groups: [[String]] = []
+            var seen: Set<ObjectIdentifier> = []
+            for window in NSApp.windows where window.isVisible {
+                let tabs = window.tabbedWindows ?? [window]
+                guard seen.insert(ObjectIdentifier(tabs[0])).inserted else { continue }
+                let names = tabs.compactMap { tab in
+                    model.appModel.windows.first { $0.hostWindow === tab }.map { $0.fileURL?.lastPathComponent ?? "Untitled" }
+                }
+                if !names.isEmpty { groups.append(names) }
+            }
+            groups.sort { $0[0] < $1[0] }
+            expect(groups == value, "tab groups are \(groups)")
+        }
+        if let value = e.launchKind {
+            expect("\(model.appModel.launchKind)" == value, "launch kind is \(model.appModel.launchKind)")
+        }
+        let session = model.appModel.currentSession()
+        if let value = e.currentSessionTabs {
+            let names = session.groups.map { $0.tabs.map { URL(fileURLWithPath: $0.path).lastPathComponent } }
+            expect(names == value, "current session is \(names)")
+        }
+        if let value = e.currentSessionProfiles {
+            let names = session.groups.map { $0.tabs.map(\.profile) }
+            expect(names == value, "current session profiles are \(names)")
         }
         if let value = e.commandKeyOwners {
             for (key, titles) in value {

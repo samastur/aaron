@@ -1,0 +1,9 @@
+{
+ "frontGroup": 1,
+ "groups": [
+  {"frame": "{{100, 100}, {900, 600}}", "selected": 1,
+   "tabs": [{"path": "$WORK/one.md", "profile": "Default"}, {"path": "$WORK/two.md", "profile": "Second"}]},
+  {"frame": "{{200, 150}, {800, 500}}", "selected": 0,
+   "tabs": [{"path": "$WORK/three.md", "profile": "Default"}, {"path": "$WORK/gone.md", "profile": "Default"}]}
+ ]
+}

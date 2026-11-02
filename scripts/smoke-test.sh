@@ -17,6 +17,7 @@ scenarios=("$@")
 if (( ${#scenarios} == 0 )); then
   scenarios=(${SMOKE}/*.json(:t:r))
   scenarios=(${scenarios:#config})
+  scenarios=(${scenarios:#*.session})
 fi
 
 failed=0
@@ -33,8 +34,14 @@ for name in $scenarios; do
   cp $document $work/
   # Extra files for a scenario: App/SmokeTests/<name>.files/*
   [[ -d $SMOKE/$name.files ]] && cp -R $SMOKE/$name.files/. $work/
+  # With a saved session, Aaron starts normally (no file) and restores it.
+  open_args=($work/${document:t})
+  if [[ -f $SMOKE/$name.session.json ]]; then
+    sed -e "s|\$WORK|$work|g" $SMOKE/$name.session.json > $work/support/session.json
+    open_args=()
+  fi
   AARON_SUPPORT_DIR=$work/support WORK=$work AARON_DEBUG_SCRIPT=$SMOKE/$name.json AARON_SNAPSHOT_DIR=$work/out \
-    timeout 120 $APP $work/${document:t} -ApplePersistenceIgnoreState YES > $work/app.log 2>&1
+    timeout 120 $APP $open_args -ApplePersistenceIgnoreState YES > $work/app.log 2>&1
   if [[ -f $work/out/result.txt ]] && [[ $(head -1 $work/out/result.txt) == PASS ]]; then
     print "PASS  $name"
     rm -rf $work

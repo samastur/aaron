@@ -35,6 +35,26 @@ final class AppModel {
     @ObservationIgnored var pendingProfiles: [(file: URL, profile: String)] = []
     /// Windows opened from a file panel that take another window's place.
     @ObservationIgnored var pendingTakeovers: [Takeover] = []
+    /// How Aaron was started: only a normal start restores and saves the
+    /// session. Until launch finishes, nothing is saved.
+    @ObservationIgnored var launchKind = LaunchKind.withRequest
+    @ObservationIgnored var sessionSaveTask: Task<Void, Never>?
+    @ObservationIgnored var sessionSavingStopped = false
+    /// An `aaron://` request arrived (decides the launch kind).
+    @ObservationIgnored var receivedOpenRequest = false
+    @ObservationIgnored var isRestoringSession = false
+    /// Whether a normal start reopens the last session's windows (app-wide).
+    var reopenWindows: Bool {
+        get {
+            access(keyPath: \.reopenWindows)
+            return store.reopenWindows()
+        }
+        set {
+            withMutation(keyPath: \.reopenWindows) {
+                do { try store.setReopenWindows(newValue) } catch { configurationError = error.localizedDescription }
+            }
+        }
+    }
     /// Untitled documents being opened as new tabs.
     @ObservationIgnored var pendingNewTabs: [NewTab] = []
     /// Creates an untitled document; replaced in tests.

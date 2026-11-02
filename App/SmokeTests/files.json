@@ -3,16 +3,29 @@
   "wait": 3.0,
   "expect": {
    "showFiles": true,
-   "filesStateIn": ["ready", "fallback"],
-   "filesTopLevelContains": ["notes", "files.md"],
-   "filesTopLevelLacks": ["node_modules"]
+   "filesStateIn": [
+    "ready",
+    "fallback"
+   ],
+   "filesTopLevelContains": [
+    "notes",
+    "files.md"
+   ],
+   "filesTopLevelLacks": [
+    "node_modules"
+   ],
+   "launchKind": "withRequest"
   },
   "snapshot": "files"
  },
  {
   "openFile": "notes/ščž #1.md",
   "wait": 2.0,
-  "expect": {"openWindowFiles": ["ščž #1.md"]},
+  "expect": {
+   "openWindowFiles": [
+    "ščž #1.md"
+   ]
+  },
   "quit": true
  }
 ]

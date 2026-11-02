@@ -1,0 +1,42 @@
+[
+ {
+  "wait": 4.0,
+  "expect": {
+   "windowCount": 3,
+   "windowProfiles": {
+    "one.md": "Default",
+    "two.md": "Second",
+    "three.md": "Default"
+   },
+   "tabGroups": [
+    [
+     "one.md",
+     "two.md"
+    ],
+    [
+     "three.md"
+    ]
+   ],
+   "currentSessionTabs": [
+    [
+     "three.md"
+    ],
+    [
+     "one.md",
+     "two.md"
+    ]
+   ],
+   "currentSessionProfiles": [
+    [
+     "Default"
+    ],
+    [
+     "Default",
+     "Second"
+    ]
+   ],
+   "launchKind": "normal"
+  },
+  "quit": true
+ }
+]

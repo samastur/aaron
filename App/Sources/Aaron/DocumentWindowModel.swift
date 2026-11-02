@@ -35,6 +35,17 @@ final class DocumentWindowModel {
                     break
                 }
             }
+            // The saved session follows windows as they move and tabs change.
+            appModel.scheduleSessionSave()
+            for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification, NSWindow.didBecomeKeyNotification] {
+                let changes = NotificationCenter.default.notifications(named: name, object: hostWindow)
+                Task { [weak self, weak hostWindow] in
+                    for await _ in changes {
+                        guard hostWindow != nil, let self else { break }
+                        appModel.scheduleSessionSave()
+                    }
+                }
+            }
         }
     }
     /// The window this one replaces, from a file panel click.
@@ -110,6 +121,7 @@ final class DocumentWindowModel {
             guard profileName != oldValue, !followingRename else { return }
             configurationChanged(from: appModel.configuration(for: oldValue))
             applyPanes()
+            appModel.scheduleSessionSave()
         }
     }
     @ObservationIgnored private var followingRename = false
@@ -179,6 +191,7 @@ final class DocumentWindowModel {
         guard url != fileURL else { return }
         fileURL = url
         appModel.refreshCopies()
+        appModel.scheduleSessionSave()
         files.reveal(url)
         tagsLoadedFor = nil
         loadTagsIfNeeded()

@@ -57,5 +57,10 @@ struct SessionTests {
         #expect(LaunchKind.decide(isDefaultLaunch: true, arguments: ["Aaron"]) == .normal)
         #expect(LaunchKind.decide(isDefaultLaunch: false, arguments: ["Aaron"]) == .withRequest)
         #expect(LaunchKind.decide(isDefaultLaunch: true, arguments: ["Aaron", LaunchKind.commandLineFlag]) == .withRequest)
+        #expect(LaunchKind.decide(isDefaultLaunch: true, arguments: ["Aaron"], openedSomething: true) == .withRequest)
+        #expect(LaunchKind.decide(isDefaultLaunch: true, arguments: ["Aaron", "/tmp/a.md"]) == .withRequest)
+        #expect(LaunchKind.decide(isDefaultLaunch: true, arguments: ["Aaron", "-ApplePersistenceIgnoreState", "YES"]) == .normal)
+        #expect(LaunchKind.decide(isDefaultLaunch: true,
+                                  arguments: ["Aaron", "-NSDocumentRevisionsDebugMode", "YES", "a.md"]) == .withRequest)
     }
 }
