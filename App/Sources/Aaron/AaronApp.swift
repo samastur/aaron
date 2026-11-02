@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Instead of the untitled window a start with nothing to open shows.
             let untitled = NSDocumentController.shared.documents.filter { $0.fileURL == nil && !$0.isDocumentEdited }
             await appModel.restore(session)
-            for document in untitled { document.close() }
+            AppModel.closeUntouched(untitled)
         }
     }
 

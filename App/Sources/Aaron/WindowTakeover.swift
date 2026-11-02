@@ -12,6 +12,7 @@ struct Takeover {
     var expanded: Set<String>
     var filter: String
     weak var replacing: NSWindow?
+    let id = UUID()
     /// A takeover nobody picked up soon after (e.g. the document was
     /// already open) must not hijack a later, unrelated open.
     var created = Date()
@@ -35,19 +36,15 @@ extension AppModel {
     func openFromPanel(_ file: URL, from window: DocumentWindowModel, inNewWindow: Bool) -> PanelOpenResult {
         if !inNewWindow, let current = window.fileURL, Self.isSameFile(current, file) { return .nothing }
         if inNewWindow {
-            pendingProfiles.removeAll { Self.isSameFile($0.file, file) }
-            pendingProfiles.append((file, window.profileName))
-            openDocument(file) { [weak self] error in
-                if error != nil { self?.pendingProfiles.removeAll { Self.isSameFile($0.file, file) } }
-            }
+            openDocument(file, profile: window.profileName)
             return .newWindow
         }
-        pendingTakeovers.removeAll { Self.isSameFile($0.file, file) }
-        pendingTakeovers.append(Takeover(file: file, profile: window.profileName, panes: window.currentPanes,
-                                         expanded: window.files.expanded, filter: window.files.filter,
-                                         replacing: window.hostWindow))
+        let takeover = Takeover(file: file, profile: window.profileName, panes: window.currentPanes,
+                                expanded: window.files.expanded, filter: window.files.filter,
+                                replacing: window.hostWindow)
+        pendingTakeovers.append(takeover)
         openDocument(file) { [weak self] error in
-            if error != nil { self?.pendingTakeovers.removeAll { Self.isSameFile($0.file, file) } }
+            if error != nil { self?.pendingTakeovers.removeAll { $0.id == takeover.id } }
         }
         return .replaced
     }

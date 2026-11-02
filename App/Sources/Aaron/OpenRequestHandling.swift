@@ -33,17 +33,25 @@ extension AppModel {
             let file = URL(fileURLWithPath: path).standardizedFileURL
             // An open file opens again, as a new copy with the profile.
             if let profile {
-                pendingProfiles.removeAll { Self.isSameFile($0.file, file) }
-                pendingProfiles.append((file, profile))
-            }
-            openDocument(file) { [weak self] error in
-                // Don't let a later, unrelated open pick up the profile.
-                if error != nil { self?.pendingProfiles.removeAll { Self.isSameFile($0.file, file) } }
+                openDocument(file, profile: profile)
+            } else {
+                openDocument(file) { _ in }
             }
         }
     }
 
-    /// The profile the `aaron` command asked for when opening this file;
+    /// Opens a file in a new window with a profile. The same file may be
+    /// waiting to open more than once, each with its own profile.
+    func openDocument(_ file: URL, profile: String) {
+        let id = UUID()
+        pendingProfiles.append((id, file, profile))
+        openDocument(file) { [weak self] error in
+            // Don't let a later, unrelated open pick up the profile.
+            if error != nil { self?.pendingProfiles.removeAll { $0.id == id } }
+        }
+    }
+
+    /// The profile asked for when opening this file, first asked first;
     /// returned once.
     func pendingProfile(for fileURL: URL?) -> String? {
         guard let fileURL,

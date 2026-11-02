@@ -49,6 +49,39 @@ final class WindowTakeoverTests: XCTestCase {
         XCTAssertEqual(app.pendingProfile(for: file("a.md")), first.profileName)
     }
 
+    func testTwoPendingCopiesKeepTheirProfiles() throws {
+        let other = try app.addProfile(copying: app.defaultProfileName)
+        let first = window("a.md")
+        first.profileName = other
+        let second = window("b.md")
+        app.openFromPanel(file("c.md"), from: first, inNewWindow: true)
+        app.openFromPanel(file("c.md"), from: second, inNewWindow: true)
+        XCTAssertEqual(app.pendingProfile(for: file("c.md")), other)
+        XCTAssertEqual(app.pendingProfile(for: file("c.md")), app.defaultProfileName)
+    }
+
+    func testTwoPendingTakeoversOfOneFileAreBothKept() {
+        let first = window("a.md")
+        let second = window("b.md")
+        first.files.filter = "first"
+        second.files.filter = "second"
+        app.openFromPanel(file("c.md"), from: first, inNewWindow: false)
+        app.openFromPanel(file("c.md"), from: second, inNewWindow: false)
+        XCTAssertEqual(app.takeover(for: file("c.md"))?.filter, "first")
+        XCTAssertEqual(app.takeover(for: file("c.md"))?.filter, "second")
+    }
+
+    func testFailedOpenDropsOnlyItsOwnPendingProfile() throws {
+        let first = window("a.md")
+        var completions: [(Error?) -> Void] = []
+        app.openDocument = { _, completion in completions.append(completion) }
+        app.openFromPanel(file("c.md"), from: first, inNewWindow: true)
+        app.openFromPanel(file("c.md"), from: first, inNewWindow: true)
+        completions[0](CocoaError(.fileNoSuchFile))
+        XCTAssertNotNil(app.pendingProfile(for: file("c.md")))
+        XCTAssertNil(app.pendingProfile(for: file("c.md")))
+    }
+
     func testNewWindowCarriesProfile() throws {
         let other = try app.addProfile(copying: app.defaultProfileName)
         let first = window("a.md")

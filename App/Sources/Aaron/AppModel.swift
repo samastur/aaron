@@ -32,7 +32,7 @@ final class AppModel {
     @ObservationIgnored private var saveTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var windowRefs: [WeakWindow] = []
     /// Profiles asked for by the `aaron` command, for files about to open.
-    @ObservationIgnored var pendingProfiles: [(file: URL, profile: String)] = []
+    @ObservationIgnored var pendingProfiles: [(id: UUID, file: URL, profile: String)] = []
     /// Windows opened from a file panel that take another window's place.
     @ObservationIgnored var pendingTakeovers: [Takeover] = []
     /// How Aaron was started: only a normal start restores and saves the

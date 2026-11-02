@@ -64,14 +64,35 @@
   }
  },
  {
+  "wait": 8.0,
+  "expect": {
+   "copiesOf": 2,
+   "windowCount": 2,
+   "copiesEdited": false,
+   "noSheets": true
+  }
+ },
+ {
+  "type": " Again.",
+  "save": true,
+  "wait": 3.0,
+  "expect": {
+   "copiesOf": 2,
+   "windowCount": 2,
+   "noSheets": true,
+   "copiesEdited": false,
+   "allCopiesContain": "Again."
+  }
+ },
+ {
   "undoInOtherCopies": true,
   "wait": 0.5,
   "expect": {
    "copiesOf": 2,
    "windowCount": 2,
-   "otherCopiesLack": "Undo me.",
-   "allCopiesContain": "After closing.",
-   "textContains": "Undo me."
+   "otherCopiesLack": "Again.",
+   "allCopiesContain": "Undo me.",
+   "textContains": "Again."
   },
   "quit": true
  }

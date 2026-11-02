@@ -4,10 +4,17 @@ import AppKit
 extension AppModel {
     /// The open document windows, front to back, grouped by tab group.
     /// Untitled documents aren't part of it.
-    func currentSession() -> SavedSession {
+    func currentSession() -> SavedSession { currentSession(windows: NSApp.orderedWindows) }
+
+    /// `ordered`: windows front to back. Document windows missing from it
+    /// (minimized, or Aaron hidden) are saved after them.
+    func currentSession(windows ordered: [NSWindow]) -> SavedSession {
         var groups: [SavedTabGroup] = []
         var seen: Set<ObjectIdentifier> = []
-        for window in NSApp.orderedWindows where window.isVisible {
+        let documentWindows = windows.compactMap(\.hostWindow)
+        let candidates = ordered.filter { window in documentWindows.contains { $0 === window } }
+            + documentWindows.filter { window in !ordered.contains { $0 === window } }
+        for window in candidates {
             let tabs = window.tabbedWindows ?? [window]
             guard !seen.contains(ObjectIdentifier(tabs[0])) else { continue }
             seen.insert(ObjectIdentifier(tabs[0]))
@@ -54,6 +61,11 @@ extension AppModel {
         return pruned.groups.isEmpty ? nil : pruned
     }
 
+    /// Closes the untitled documents a start shows, unless typed in since.
+    static func closeUntouched(_ documents: [NSDocument]) {
+        for document in documents where !document.isDocumentEdited { document.close() }
+    }
+
     /// Opens the session's files with their profiles, as windows and tabs.
     func restore(_ session: SavedSession) async {
         isRestoringSession = true
@@ -86,11 +98,7 @@ extension AppModel {
     /// Opens a file with a profile and waits for its window.
     private func open(_ file: URL, profile: String) async -> NSWindow? {
         let before = Set(windows.map(ObjectIdentifier.init))
-        pendingProfiles.removeAll { Self.isSameFile($0.file, file) }
-        pendingProfiles.append((file, profile))
-        openDocument(file) { [weak self] error in
-            if error != nil { self?.pendingProfiles.removeAll { Self.isSameFile($0.file, file) } }
-        }
+        openDocument(file, profile: profile)
         for _ in 0..<100 {
             if let model = windows.first(where: { !before.contains(ObjectIdentifier($0))
                 && $0.fileURL.map { Self.isSameFile($0, file) } == true }),

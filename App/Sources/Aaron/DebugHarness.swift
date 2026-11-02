@@ -115,6 +115,8 @@ enum DebugHarness {
         /// No other copy of the file contains this text.
         var otherCopiesLack: String?
         var showsCopyNote: Bool?
+        /// No window shows a sheet or alert (e.g. a save conflict).
+        var noSheets: Bool?
         /// Tabs of the window, 1 without tabs.
         var tabCount: Int?
         var selectedTabIndex: Int?
@@ -481,6 +483,10 @@ enum DebugHarness {
                 let owners = commandKeyItems(key, in: NSApp.mainMenu).sorted()
                 expect(owners == titles.sorted(), "⌘\(key) belongs to \(owners)")
             }
+        }
+        if e.noSheets == true {
+            let sheets = NSApp.windows.compactMap(\.attachedSheet).map { $0.title }
+            expect(sheets.isEmpty && NSApp.modalWindow == nil, "sheets are shown: \(sheets)")
         }
         if let value = e.showsCopyNote { expect(model.showsCopyNote == value, "showsCopyNote is \(model.showsCopyNote)") }
         if let value = e.otherCopiesShowNote {
