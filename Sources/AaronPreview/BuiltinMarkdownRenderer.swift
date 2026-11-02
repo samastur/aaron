@@ -14,7 +14,7 @@ public struct BuiltinMarkdownRenderer: PreviewRenderer {
             body = (request.text as NSString).substring(from: frontMatter.bodyStart)
             header = Self.header(for: frontMatter)
         }
-        let content = HTMLFormatter.format(Document(parsing: body))
+        let content = PreviewHTMLFormatter.format(Document(parsing: body))
         return Self.page(header + content)
     }
 
