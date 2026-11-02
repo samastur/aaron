@@ -101,7 +101,13 @@ read in the others. Agreed approach, **reload on save**:
   unsaved changes reload from disk.
 - A reloading copy keeps its scroll position and selection as closely as
   it can (same character offset, clamped) *(Claude's call)*.
-- The editor's undo history may be reset by a reload *(Claude's call)*.
+- A reload keeps the copy's undo history: the new text is applied as one
+  ordinary edit that changes only what differs, so ⌘Z undoes the reload
+  as a single step and earlier history stays. Resetting the history is
+  allowed only if this proves impractical, and the copy being typed in
+  never reloads, so its history is never affected *(the user: "Not
+  great that undo history would be lost")*. With live mirror, all copies
+  share one undo history.
 - If two copies both have unsaved edits, the standard macOS conflict
   handling applies (the "changed by another application" prompt when
   saving). Nothing smarter is built *(Claude's call, the user expects to
