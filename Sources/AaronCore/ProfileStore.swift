@@ -43,6 +43,7 @@ public struct ProfileStore: Sendable {
     var settingsURL: URL { directory.appendingPathComponent("profiles.json") }
     var legacyURL: URL { directory.appendingPathComponent("config.json") }
     var tokenURL: URL { directory.appendingPathComponent("cli-token") }
+    var sessionURL: URL { directory.appendingPathComponent("session.json") }
 
     public func url(for name: String) -> URL {
         profilesDirectory.appendingPathComponent(name + ".json")
@@ -117,18 +118,48 @@ public struct ProfileStore: Sendable {
 
     /// The default named in `profiles.json`, if that profile exists.
     private func storedDefaultProfileName() -> String? {
-        guard let data = try? Data(contentsOf: settingsURL),
-              let settings = try? JSONDecoder().decode(ProfileSettings.self, from: data),
-              let name = settings.defaultProfile, names().contains(name) else { return nil }
+        guard let name = settings().defaultProfile, names().contains(name) else { return nil }
         return name
     }
 
     public func setDefaultProfile(_ name: String) throws {
         guard names().contains(name) else { throw ProfileError.notFound(name) }
+        var settings = settings()
+        settings.defaultProfile = name
+        try write(settings)
+    }
+
+    /// Whether a normal start reopens the windows of the last one (app-wide).
+    public func reopenWindows() -> Bool { settings().reopenWindows ?? true }
+
+    public func setReopenWindows(_ reopen: Bool) throws {
+        var settings = settings()
+        settings.reopenWindows = reopen
+        try write(settings)
+    }
+
+    private func settings() -> ProfileSettings {
+        (try? Data(contentsOf: settingsURL)).flatMap { try? JSONDecoder().decode(ProfileSettings.self, from: $0) }
+            ?? ProfileSettings()
+    }
+
+    private func write(_ settings: ProfileSettings) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(ProfileSettings(defaultProfile: name)).write(to: settingsURL, options: .atomic)
+        try encoder.encode(settings).write(to: settingsURL, options: .atomic)
+    }
+
+    /// The windows of the last normal session.
+    public func loadSession() -> SavedSession? {
+        (try? Data(contentsOf: sessionURL)).flatMap { try? JSONDecoder().decode(SavedSession.self, from: $0) }
+    }
+
+    public func saveSession(_ session: SavedSession) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(session).write(to: sessionURL, options: .atomic)
     }
 
     /// Adds a profile from a configuration file, which may contain only
@@ -173,6 +204,8 @@ public struct ProfileStore: Sendable {
     }
 }
 
+/// App-wide settings, in `profiles.json`.
 private struct ProfileSettings: Codable {
     var defaultProfile: String?
+    var reopenWindows: Bool?
 }
