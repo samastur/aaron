@@ -1,3 +1,4 @@
+import AaronCore
 import AaronPelican
 import AppKit
 
@@ -59,6 +60,76 @@ final class MarkdownTextView: NSTextView {
         isInsertingCompletion = true
         defer { isInsertingCompletion = false }
         super.insertCompletion(word, forPartialWordRange: charRange, movement: movement, isFinal: flag)
+    }
+
+    // MARK: Format menu
+
+    @objc func toggleMarkdownBold(_ sender: Any?) {
+        applyFormatting(MarkdownFormatting.toggleBold(in: string, selection: selectedRange()), undoName: "Bold")
+    }
+
+    @objc func toggleMarkdownItalic(_ sender: Any?) {
+        applyFormatting(MarkdownFormatting.toggleItalic(in: string, selection: selectedRange()), undoName: "Italic")
+    }
+
+    @objc func insertMarkdownLink(_ sender: Any?) {
+        let clipboard = NSPasteboard.general.string(forType: .string)
+        applyFormatting(MarkdownFormatting.insertLink(in: string, selection: selectedRange(), clipboardURL: clipboard),
+                        undoName: "Link")
+    }
+
+    @objc func toggleMarkdownQuote(_ sender: Any?) {
+        applyFormatting(MarkdownFormatting.toggleQuote(in: string, selection: selectedRange()), undoName: "Quote")
+    }
+
+    /// Asks for HTML to paste and inserts it in place of the selection.
+    @objc func insertHTMLFromDialog(_ sender: Any?) {
+        guard isEditable, let window else { NSSound.beep(); return }
+        let alert = NSAlert()
+        alert.messageText = "Insert HTML"
+        alert.informativeText = "Paste the HTML to insert, e.g. an embed code."
+        alert.addButton(withTitle: "Insert")
+        alert.addButton(withTitle: "Cancel")
+
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.frame = NSRect(x: 0, y: 0, width: 420, height: 180)
+        scrollView.borderType = .bezelBorder
+        let input = scrollView.documentView as! NSTextView
+        input.isRichText = false
+        input.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        input.isAutomaticQuoteSubstitutionEnabled = false
+        input.isAutomaticDashSubstitutionEnabled = false
+        input.isAutomaticTextReplacementEnabled = false
+        input.isAutomaticSpellingCorrectionEnabled = false
+        input.setAccessibilityIdentifier("htmlInput")
+        alert.accessoryView = scrollView
+        alert.window.initialFirstResponder = input
+
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            self.insertHTMLFragment(input.string)
+        }
+    }
+
+    func insertHTMLFragment(_ html: String) {
+        guard !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        applyFormatting(MarkdownFormatting.insertHTML(html, in: string, selection: selectedRange()),
+                        undoName: "Insert HTML")
+    }
+
+    /// Applies a Format command as one undoable change.
+    private func applyFormatting(_ edit: FormattingEdit, undoName: String) {
+        guard isEditable, let storage = textStorage, NSMaxRange(edit.range) <= storage.length else {
+            NSSound.beep()
+            return
+        }
+        window?.makeFirstResponder(self)
+        guard shouldChangeText(in: edit.range, replacementString: edit.replacement) else { return }
+        storage.replaceCharacters(in: edit.range, with: edit.replacement)
+        didChangeText()
+        undoManager?.setActionName(undoName)
+        setSelectedRange(edit.selection)
+        scrollRangeToVisible(edit.selection)
     }
 
     /// Opens the completion list while a tag is being typed.

@@ -75,6 +75,9 @@ Within a step, actions run first (in the order listed), then `wait`,
 |---|---|
 | `"caretAfter": "text"` | put the caret after the first occurrence |
 | `"caretAtEnd": true` | put the caret at the end |
+| `"select": "text"` | select the first occurrence |
+| `"format": "bold"` | run a Format command on the editor: `bold`, `italic`, `link` or `quote` |
+| `"insertHTML": "<div>…</div>"` | insert HTML as Format ▸ Insert HTML… does (without the dialog) |
 | `"type": "text"` | type character by character (auto-completion is counted, its popup suppressed) |
 | `"complete": true` | invoke completion (opens the modal popup; avoid in unattended runs) |
 | `"review": true/false` | show/hide the review panel (without animation) |

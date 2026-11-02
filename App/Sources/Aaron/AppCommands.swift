@@ -63,6 +63,21 @@ struct AppCommands: Commands {
                 .disabled(window?.isPelican != true)
         }
 
+        CommandMenu("Format") {
+            formatButton("Bold", #selector(MarkdownTextView.toggleMarkdownBold(_:)))
+                .keyboardShortcut("b", modifiers: .command)
+            formatButton("Italic", #selector(MarkdownTextView.toggleMarkdownItalic(_:)))
+                .keyboardShortcut("i", modifiers: .command)
+            formatButton("Link", #selector(MarkdownTextView.insertMarkdownLink(_:)))
+                .keyboardShortcut("k", modifiers: .command)
+            // As Mail's Increase Quote Level.
+            formatButton("Quote", #selector(MarkdownTextView.toggleMarkdownQuote(_:)))
+                .keyboardShortcut("'", modifiers: .command)
+            Divider()
+            formatButton("Insert HTML…", #selector(MarkdownTextView.insertHTMLFromDialog(_:)))
+                .keyboardShortcut("h", modifiers: [.command, .shift])
+        }
+
         CommandGroup(replacing: .help) {
             MarkdownHelpButton(appModel: appModel, window: window)
         }
@@ -95,6 +110,12 @@ struct AppCommands: Commands {
             Button("Clear Suggestions") { window?.clearSuggestions() }
                 .disabled(window?.session.suggestions.isEmpty ?? true)
         }
+    }
+
+    /// A Format command, handled by the editor when it has the focus.
+    private func formatButton(_ title: String, _ action: Selector) -> some View {
+        Button(title) { NSApp.sendAction(action, to: nil, from: nil) }
+            .disabled(window == nil || window?.isRunningAction == true || window?.showEditor == false)
     }
 
     @ViewBuilder

@@ -1,0 +1,11 @@
+[
+ {"wait": 1, "select": "bold", "format": "bold", "expect": {"textContains": "Make this **bold** and"}},
+ {"format": "bold", "expect": {"textContains": "Make this bold and"}},
+ {"select": "italic", "format": "italic", "expect": {"textContains": "this *italic*."}},
+ {"caretAfter": "A quoted", "format": "quote", "expect": {"textContains": "\n> A quoted line.\n"}},
+ {"undo": true, "expect": {"textContains": "\nA quoted line.\n"}},
+ {"select": "https://example.com/docs", "format": "link", "expect": {"textContains": "See [](https://example.com/docs) for"}},
+ {"caretAfter": "for more.\n", "insertHTML": "<figure>\n<img src=\"a.png\">\n</figure>", "wait": 1,
+  "expect": {"textContains": "for more.\n\n<figure>\n<img src=\"a.png\">\n</figure>\n\nEnd.", "previewContains": "<figure>"}},
+ {"quit": true}
+]

@@ -7,7 +7,7 @@ None of these depend on where your files or tools are: everything is set up in
 Settings.
 
 - [Getting started](getting-started.md): install, first launch, the window
-- [Writing and editing](editing.md): documents, highlighting, status bar, find and spelling
+- [Writing and editing](editing.md): documents, formatting, highlighting, status bar, find and spelling
 - [The file panel](files.md): the Markdown files under a profile's folder
 - [Preview](preview.md): the preview panel, built-in and external renderers
 - [AI review](review.md): running AI actions and working through suggestions

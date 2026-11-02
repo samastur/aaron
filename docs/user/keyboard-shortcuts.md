@@ -8,6 +8,11 @@
 | ⌘S | Save | File |
 | ⌘, | Settings | Aaron |
 | ⇧⌘M | Markdown Help | Help |
+| ⌘B | Bold | Format |
+| ⌘I | Italic | Format |
+| ⌘K | Link | Format |
+| ⌘' | Quote | Format |
+| ⇧⌘H | Insert HTML… | Format |
 | ⌃⌘S | Show/Hide Files | View |
 | ⌥⌘E | Show/Hide Editor | View |
 | ⌥⌘P | Show/Hide Preview | View |

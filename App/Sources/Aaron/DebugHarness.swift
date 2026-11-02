@@ -16,6 +16,12 @@ enum DebugHarness {
         var type: String?
         var caretAfter: String?
         var caretAtEnd: Bool?
+        /// Select the first occurrence of this text.
+        var select: String?
+        /// Run a Format command on the editor: bold, italic, link or quote.
+        var format: String?
+        /// Insert this HTML as Format ▸ Insert HTML… would.
+        var insertHTML: String?
         var complete: Bool?
         var run: String?
         var waitIdle: Bool?
@@ -136,6 +142,10 @@ enum DebugHarness {
         if step.caretAtEnd == true, let textView {
             textView.setSelectedRange(NSRange(location: (textView.string as NSString).length, length: 0))
         }
+        if let marker = step.select, let textView {
+            let range = (textView.string as NSString).range(of: marker)
+            if range.location != NSNotFound { textView.setSelectedRange(range) }
+        }
         if let text = step.type, let textView {
             textView.debugSuppressCompletionPopup = true
             textView.window?.makeFirstResponder(textView)
@@ -146,6 +156,16 @@ enum DebugHarness {
             }
         }
         if step.complete == true { textView?.complete(nil) }
+        if let command = step.format, let textView {
+            switch command {
+            case "bold": textView.toggleMarkdownBold(nil)
+            case "italic": textView.toggleMarkdownItalic(nil)
+            case "link": textView.insertMarkdownLink(nil)
+            case "quote": textView.toggleMarkdownQuote(nil)
+            default: failures.append("unknown format command \(command)")
+            }
+        }
+        if let html = step.insertHTML { textView?.insertHTMLFragment(html) }
         if let review = step.review {
             // Without animation: animations don't run while the screen is locked.
             var transaction = Transaction()

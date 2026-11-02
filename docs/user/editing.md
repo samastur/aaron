@@ -23,6 +23,24 @@ Things that behave like in other Mac text editors:
   automatic text replacement) are off, so `"`, `--` and `...` stay as typed.
   You can turn them on for a window under **Edit ▸ Substitutions**.
 
+## Formatting
+
+The **Format** menu adds Markdown around the selection. The shortcuts are
+the usual ones from Mac editors and web apps.
+
+| Command | Shortcut | What it does |
+|---|---|---|
+| Bold | ⌘B | `**text**`; again removes it. Also removes `__text__`. |
+| Italic | ⌘I | `*text*`; again removes it. Also removes `_text_`. Bold and italic combine to `***text***`. |
+| Link | ⌘K | `[text](url)`. A URL on the clipboard is used as the link; a selected URL becomes the link and the caret goes to the text. |
+| Quote | ⌘' | `> ` before each selected line; if they are all quoted already, removes one level. |
+| Insert HTML… | ⇧⌘H | Asks for HTML (for example an embed code) and inserts it in place of the selection. HTML that starts with a block element such as `<div>`, `<figure>` or `<iframe>` gets an empty line before and after it, which Markdown needs to leave it alone. |
+
+Bold and italic use the word at the caret if nothing is selected, or insert
+an empty pair (`****`) with the caret in the middle. Spaces at the ends of
+the selection are left outside the markers. Each command is one step to
+undo.
+
 ## Syntax highlighting
 
 Aaron highlights Markdown lightly so the text stays readable:
