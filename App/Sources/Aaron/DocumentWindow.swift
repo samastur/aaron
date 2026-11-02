@@ -93,13 +93,14 @@ private struct DocumentContent: View {
 
                 AIActionsMenu(model: model)
 
-                ProfileMenu(model: model)
-
                 Toggle(isOn: $model.showReview) {
                     Label("Review", systemImage: "text.badge.checkmark")
                 }
                 .help("Show or hide AI review mode (⌥⌘R)")
                 .accessibilityIdentifier("toggleReview")
+
+                // Last: the profile decides all the panes before it.
+                ProfileMenu(model: model)
             }
         }
         .focusedSceneValue(\.windowModel, model)
