@@ -114,6 +114,10 @@ read in the others. Agreed approach, **reload on save**:
   type in one copy only)*.
 - This should also make a file changed by another app reload, which is
   fine and expected.
+- **Reload on save is the target.** The user, approving the design: "We
+  can also go with the easier version [...] We can always reimplement in
+  AppKit later if this implementation turns out to be problematic in
+  practice." The builder shouldn't spend effort chasing live mirror.
 - **Live mirror** (all copies showing the same text as it is typed, each
   with its own scroll position, panes, profile and review) is better and
   allowed if the builder finds a clean way. The user: "Live mirror would
