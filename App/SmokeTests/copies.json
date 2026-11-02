@@ -1,0 +1,37 @@
+[
+ {
+  "openAgain": true,
+  "wait": 2.0,
+  "expect": {
+   "copiesOf": 2,
+   "windowCount": 2
+  }
+ },
+ {
+  "caretAtEnd": true,
+  "type": "\nCopy sync marker.",
+  "save": true,
+  "wait": 3.0,
+  "expect": {
+   "allCopiesContain": "Copy sync marker.",
+   "copiesEdited": false
+  }
+ },
+ {
+  "closeOtherCopies": true,
+  "wait": 1.0,
+  "expect": {
+   "copiesOf": 1,
+   "windowCount": 1
+  }
+ },
+ {
+  "type": " After closing.",
+  "save": true,
+  "wait": 1.0,
+  "expect": {
+   "textContains": "Copy sync marker. After closing."
+  },
+  "quit": true
+ }
+]

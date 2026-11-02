@@ -45,6 +45,12 @@ enum DebugHarness {
         var newWindow: Bool?
         /// Type into the file panel's filter.
         var filter: String?
+        /// Open the window's file again, as File ▸ Open… would.
+        var openAgain: Bool?
+        /// Save the window's document, as File ▸ Save would.
+        var save: Bool?
+        /// Close the other windows that show the same file.
+        var closeOtherCopies: Bool?
         var review: Bool?
         var snapshot: String?
         var expect: Expectation?
@@ -91,6 +97,12 @@ enum DebugHarness {
         /// Some document window's text starts with this.
         var anyWindowTextStartsWith: String?
         var menuItemEnabled: [String]?
+        /// Windows showing the same file as the scripted window.
+        var copiesOf: Int?
+        /// Every copy of the scripted window's file contains this text.
+        var allCopiesContain: String?
+        /// Whether any other copy of the file is marked as edited.
+        var copiesEdited: Bool?
     }
 
     private static var failures: [String] = []
@@ -206,6 +218,24 @@ enum DebugHarness {
                                          inNewWindow: step.newWindow ?? false)
         }
         if let preview = step.preview { model.showPreview = preview }
+        if step.openAgain == true, let url = model.fileURL {
+            model.appModel.openDocument(url) { error in
+                if let error { failures.append("opening again failed: \(error)") }
+            }
+        }
+        if step.closeOtherCopies == true, let url = model.fileURL {
+            for other in model.appModel.windows where other !== model
+                && other.fileURL.map({ AppModel.isSameFile($0, url) }) == true {
+                other.hostWindow?.performClose(nil)
+            }
+        }
+        if step.save == true {
+            if let document = model.hostWindow?.windowController?.document as? NSDocument {
+                document.save(nil)
+            } else {
+                failures.append("the window has no document to save")
+            }
+        }
 
         if let seconds = step.wait { try await Task.sleep(for: .seconds(seconds)) }
         if step.waitIdle == true {
@@ -351,6 +381,20 @@ enum DebugHarness {
             for (file, profile) in expected {
                 expect(actual[file] == profile, "window of \(file) has profile \(actual[file] ?? "none"): \(actual)")
             }
+        }
+        let copies = model.appModel.windows.filter { other in
+            guard let a = other.fileURL, let b = model.fileURL else { return false }
+            return AppModel.isSameFile(a, b)
+        }
+        if let value = e.copiesOf { expect(copies.count == value, "copies of the file: \(copies.count)") }
+        if let value = e.allCopiesContain {
+            let texts = copies.map(\.editor.currentText)
+            expect(texts.allSatisfy { $0.contains(value) },
+                   "copies lacking \(value.debugDescription): \(texts.filter { !$0.contains(value) }.map { String($0.prefix(40)) })")
+        }
+        if let value = e.copiesEdited {
+            let edited = copies.filter { $0 !== model }.contains { $0.hostWindow?.isDocumentEdited == true }
+            expect(edited == value, "other copies edited: \(edited)")
         }
         if let value = e.words { expect(model.statistics.words == value, "word count is \(model.statistics.words)") }
     }

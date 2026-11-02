@@ -36,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let appModel = AppModel.makeDefault()
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // Before files given at launch are opened.
+        DocumentReopening.enable()
         // Before launch finishes, so a request that starts the app is not missed.
         NSAppleEventManager.shared().setEventHandler(
             self, andSelector: #selector(handleGetURL(_:replyEvent:)),
