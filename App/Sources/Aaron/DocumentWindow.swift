@@ -47,6 +47,10 @@ private struct DocumentContent: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if model.showsCopyNote {
+                CopyNote(model: model)
+                Divider()
+            }
             HSplitView {
                 if model.showFiles {
                     FilePanel(model: model)

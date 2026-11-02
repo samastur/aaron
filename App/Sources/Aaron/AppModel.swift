@@ -234,6 +234,10 @@ final class AppModel {
 
     var windows: [DocumentWindowModel] { windowRefs.compactMap(\.window) }
 
+    func unregister(_ window: DocumentWindowModel) {
+        windowRefs.removeAll { $0.window == nil || $0.window === window }
+    }
+
     private func profileRenamed(_ old: String, to new: String) {
         for window in windows where window.profileName == old { window.profileRenamed(to: new) }
     }

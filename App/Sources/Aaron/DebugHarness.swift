@@ -53,6 +53,7 @@ enum DebugHarness {
         var closeOtherCopies: Bool?
         /// Undo in the other windows that show the same file.
         var undoInOtherCopies: Bool?
+        var dismissCopyNote: Bool?
         var review: Bool?
         var snapshot: String?
         var expect: Expectation?
@@ -107,6 +108,9 @@ enum DebugHarness {
         var copiesEdited: Bool?
         /// No other copy of the file contains this text.
         var otherCopiesLack: String?
+        var showsCopyNote: Bool?
+        /// Whether the other copies of the file show the note.
+        var otherCopiesShowNote: Bool?
     }
 
     private static var failures: [String] = []
@@ -239,6 +243,7 @@ enum DebugHarness {
                 other.editor.textView?.undoManager?.undo()
             }
         }
+        if step.dismissCopyNote == true { model.dismissCopyNote() }
         if step.save == true {
             if let document = model.hostWindow?.windowController?.document as? NSDocument {
                 document.save(nil)
@@ -401,6 +406,11 @@ enum DebugHarness {
             let texts = copies.map(\.editor.currentText)
             expect(texts.allSatisfy { $0.contains(value) },
                    "copies lacking \(value.debugDescription): \(texts.filter { !$0.contains(value) }.map { String($0.prefix(40)) })")
+        }
+        if let value = e.showsCopyNote { expect(model.showsCopyNote == value, "showsCopyNote is \(model.showsCopyNote)") }
+        if let value = e.otherCopiesShowNote {
+            let shown = copies.filter { $0 !== model }.map(\.showsCopyNote)
+            expect(!shown.isEmpty && shown.allSatisfy { $0 == value }, "other copies show the note: \(shown)")
         }
         if let value = e.otherCopiesLack {
             expect(!copies.contains { $0 !== model && $0.editor.currentText.contains(value) },

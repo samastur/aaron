@@ -18,9 +18,19 @@ final class DocumentWindowModel {
     /// The window showing this model; set once it is on screen.
     @ObservationIgnored weak var hostWindow: NSWindow? {
         didSet {
-            if let hostWindow, let old = replacingWindow {
+            guard let hostWindow, hostWindow !== oldValue else { return }
+            if let old = replacingWindow {
                 replacingWindow = nil
                 Self.take(placeOf: old, by: hostWindow)
+            }
+            // Other copies of the file stop pointing this one out.
+            let closing = NotificationCenter.default.notifications(named: NSWindow.willCloseNotification,
+                                                                   object: hostWindow)
+            Task { [weak self] in
+                for await _ in closing {
+                    if let self { appModel.windowClosed(self) }
+                    break
+                }
             }
         }
     }
@@ -29,6 +39,11 @@ final class DocumentWindowModel {
 
     private(set) var text = ""
     private(set) var fileURL: URL?
+    /// Windows showing this window's file, this one included.
+    var copyCount = 1 {
+        didSet { if copyCount > oldValue { copyNoteDismissed = false } }
+    }
+    var copyNoteDismissed = false
     private(set) var isPelican = false
     private(set) var statistics = TextStatistics(words: 0, characters: 0)
 
@@ -143,6 +158,7 @@ final class DocumentWindowModel {
 
     func documentOpened(text: String, fileURL: URL?) {
         self.fileURL = fileURL
+        appModel.refreshCopies()
         files.configure(configuration.files)
         files.reveal(fileURL)
         textChanged(text)
@@ -157,6 +173,7 @@ final class DocumentWindowModel {
     func fileURLChanged(_ url: URL?) {
         guard url != fileURL else { return }
         fileURL = url
+        appModel.refreshCopies()
         files.reveal(url)
         tagsLoadedFor = nil
         loadTagsIfNeeded()

@@ -4,8 +4,11 @@
   "wait": 2.0,
   "expect": {
    "copiesOf": 2,
-   "windowCount": 2
-  }
+   "windowCount": 2,
+   "showsCopyNote": true,
+   "otherCopiesShowNote": true
+  },
+  "snapshot": "copy-note"
  },
  {
   "caretAtEnd": true,
@@ -16,15 +19,19 @@
    "copiesOf": 2,
    "windowCount": 2,
    "allCopiesContain": "Copy sync marker.",
-   "copiesEdited": false
-  }
+   "copiesEdited": false,
+   "showsCopyNote": false,
+   "otherCopiesShowNote": true
+  },
+  "dismissCopyNote": true
  },
  {
   "closeOtherCopies": true,
   "wait": 1.0,
   "expect": {
    "copiesOf": 1,
-   "windowCount": 1
+   "windowCount": 1,
+   "showsCopyNote": false
   }
  },
  {
@@ -41,7 +48,8 @@
   "expect": {
    "copiesOf": 2,
    "windowCount": 2,
-   "allCopiesContain": "After closing."
+   "allCopiesContain": "After closing.",
+   "showsCopyNote": true
   }
  },
  {
