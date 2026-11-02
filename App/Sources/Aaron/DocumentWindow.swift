@@ -19,8 +19,11 @@ struct DocumentWindow: View {
         .onAppear {
             if model == nil {
                 let takeover = appModel.takeover(for: fileURL)
+                let newTab = fileURL == nil ? appModel.takeNewTab() : nil
                 let created = DocumentWindowModel(appModel: appModel,
-                                                  profileName: takeover?.profile ?? appModel.pendingProfile(for: fileURL))
+                                                  profileName: takeover?.profile ?? newTab?.profile
+                                                      ?? appModel.pendingProfile(for: fileURL))
+                created.tabParent = newTab?.parent
                 appModel.register(created)
                 created.editor.load(text: $document.text, model: created)
                 created.documentOpened(text: document.text, fileURL: fileURL)

@@ -24,6 +24,10 @@ extension AppModel {
                 configurationError = "There is no profile named “\(name)”; the default profile is used instead."
             }
         }
+        if request.paths.isEmpty, let profile {
+            newTab(profile: profile, parent: nil)
+            return
+        }
         for path in request.paths {
             let file = URL(fileURLWithPath: path).standardizedFileURL
             // An open file opens again, as a new copy with the profile.

@@ -35,6 +35,12 @@ final class AppModel {
     @ObservationIgnored var pendingProfiles: [(file: URL, profile: String)] = []
     /// Windows opened from a file panel that take another window's place.
     @ObservationIgnored var pendingTakeovers: [Takeover] = []
+    /// Untitled documents being opened as new tabs.
+    @ObservationIgnored var pendingNewTabs: [NewTab] = []
+    /// Creates an untitled document; replaced in tests.
+    @ObservationIgnored var newDocument: () -> Void = {
+        NSDocumentController.shared.newDocument(nil)
+    }
     /// Opens a file as a document and reports failure; replaced in tests.
     @ObservationIgnored var openDocument: (URL, @escaping (Error?) -> Void) -> Void = { url, completion in
         NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in

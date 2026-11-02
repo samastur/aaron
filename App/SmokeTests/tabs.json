@@ -1,0 +1,74 @@
+[
+ {
+  "profile": "Second",
+  "wait": 1.0,
+  "expect": {
+   "tabCount": 1,
+   "commandKeyOwners": {
+    "t": [
+     "New Tab"
+    ],
+    "1": [
+     "Select Tab 1"
+    ],
+    "9": [
+     "Select Last Tab"
+    ]
+   }
+  }
+ },
+ {
+  "newTab": true,
+  "wait": 2.0,
+  "expect": {
+   "tabCount": 2,
+   "tabFiles": [
+    "story.md",
+    "Untitled"
+   ],
+   "tabProfiles": [
+    "Second",
+    "Second"
+   ],
+   "selectedTabIndex": 1
+  },
+  "snapshot": "tabs"
+ },
+ {
+  "selectTab": 1,
+  "wait": 0.5,
+  "expect": {
+   "selectedTabIndex": 0
+  }
+ },
+ {
+  "selectTab": 9,
+  "wait": 0.5,
+  "expect": {
+   "selectedTabIndex": 1
+  }
+ },
+ {
+  "openFile": "notes.md",
+  "inTab": 1,
+  "wait": 2.0,
+  "expect": {
+   "tabCount": 2,
+   "tabFiles": [
+    "story.md",
+    "notes.md"
+   ],
+   "tabProfiles": [
+    "Second",
+    "Second"
+   ],
+   "openWindowFiles": [
+    "story.md",
+    "notes.md"
+   ],
+   "windowCount": 2
+  },
+  "quit": true,
+  "snapshot": "replaced"
+ }
+]

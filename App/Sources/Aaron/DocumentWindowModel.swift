@@ -22,6 +22,9 @@ final class DocumentWindowModel {
             if let old = replacingWindow {
                 replacingWindow = nil
                 Self.take(placeOf: old, by: hostWindow)
+            } else if let parent = tabParent {
+                tabParent = nil
+                Self.join(hostWindow, asTabOf: parent)
             }
             // Other copies of the file stop pointing this one out.
             let closing = NotificationCenter.default.notifications(named: NSWindow.willCloseNotification,
@@ -36,6 +39,8 @@ final class DocumentWindowModel {
     }
     /// The window this one replaces, from a file panel click.
     @ObservationIgnored weak var replacingWindow: NSWindow?
+    /// The window this one opens as a tab of (File ▸ New Tab).
+    @ObservationIgnored weak var tabParent: NSWindow?
 
     private(set) var text = ""
     private(set) var fileURL: URL?

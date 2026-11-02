@@ -54,6 +54,12 @@ enum DebugHarness {
         /// Undo in the other windows that show the same file.
         var undoInOtherCopies: Bool?
         var dismissCopyNote: Bool?
+        /// File ▸ New Tab from the window.
+        var newTab: Bool?
+        /// Choose a tab as ⌘1–⌘9 would.
+        var selectTab: Int?
+        /// With `openFile`: open it from this tab (0-based) of the window.
+        var inTab: Int?
         var review: Bool?
         var snapshot: String?
         var expect: Expectation?
@@ -109,6 +115,14 @@ enum DebugHarness {
         /// No other copy of the file contains this text.
         var otherCopiesLack: String?
         var showsCopyNote: Bool?
+        /// Tabs of the window, 1 without tabs.
+        var tabCount: Int?
+        var selectedTabIndex: Int?
+        /// File names of the window's tabs in order; "Untitled" for none.
+        var tabFiles: [String]?
+        var tabProfiles: [String]?
+        /// Key → titles of the menu items with ⌘ and that key.
+        var commandKeyOwners: [String: [String]]?
         /// Whether the other copies of the file show the note.
         var otherCopiesShowNote: Bool?
     }
@@ -221,8 +235,14 @@ enum DebugHarness {
         if let arguments = step.cli { await runCommand(arguments) }
         if let editor = step.editor { model.showEditor = editor }
         if let filter = step.filter { model.files.filter = filter }
+        if step.newTab == true { model.appModel.newTab(from: model) }
+        if let key = step.selectTab, let tabs = model.hostWindow?.tabbedWindows,
+           let index = TabKeys.index(forKey: key, tabCount: tabs.count) {
+            tabs[index].makeKeyAndOrderFront(nil)
+        }
         if let path = step.openFile {
-            model.appModel.openFromPanel(model.files.root.appendingPathComponent(path), from: model,
+            let from = step.inTab.flatMap { tabModels(of: model)[safe: $0] } ?? model
+            model.appModel.openFromPanel(from.files.root.appendingPathComponent(path), from: from,
                                          inNewWindow: step.newWindow ?? false)
         }
         if let preview = step.preview { model.showPreview = preview }
@@ -407,6 +427,27 @@ enum DebugHarness {
             expect(texts.allSatisfy { $0.contains(value) },
                    "copies lacking \(value.debugDescription): \(texts.filter { !$0.contains(value) }.map { String($0.prefix(40)) })")
         }
+        let tabs = tabModels(of: model)
+        if let value = e.tabCount { expect(tabs.count == value, "tab count is \(tabs.count)") }
+        if let value = e.selectedTabIndex {
+            let selected = model.hostWindow?.tabGroup?.selectedWindow
+            let index = tabs.firstIndex { $0.hostWindow === selected }
+            expect(index == value, "selected tab is \(index.map(String.init) ?? "none")")
+        }
+        if let value = e.tabFiles {
+            let names = tabs.map { $0.fileURL?.lastPathComponent ?? "Untitled" }
+            expect(names == value, "tabs show \(names)")
+        }
+        if let value = e.tabProfiles {
+            let names = tabs.map(\.profileName)
+            expect(names == value, "tab profiles are \(names)")
+        }
+        if let value = e.commandKeyOwners {
+            for (key, titles) in value {
+                let owners = commandKeyItems(key, in: NSApp.mainMenu).sorted()
+                expect(owners == titles.sorted(), "⌘\(key) belongs to \(owners)")
+            }
+        }
         if let value = e.showsCopyNote { expect(model.showsCopyNote == value, "showsCopyNote is \(model.showsCopyNote)") }
         if let value = e.otherCopiesShowNote {
             let shown = copies.filter { $0 !== model }.map(\.showsCopyNote)
@@ -521,6 +562,22 @@ enum DebugHarness {
         return ([line] + view.subviews.map { hierarchy($0, depth: depth + 1) }).joined(separator: "\n")
     }
 
+    /// The window models of the window's tabs, in tab order.
+    private static func tabModels(of model: DocumentWindowModel) -> [DocumentWindowModel] {
+        guard let host = model.hostWindow else { return [model] }
+        let windows = host.tabbedWindows ?? [host]
+        return windows.compactMap { window in model.appModel.windows.first { $0.hostWindow === window } }
+    }
+
+    private static func commandKeyItems(_ key: String, in menu: NSMenu?) -> [String] {
+        guard let menu else { return [] }
+        menu.update()
+        return menu.items.flatMap { item in
+            (item.keyEquivalent == key && item.keyEquivalentModifierMask == .command ? [item.title] : [])
+                + commandKeyItems(key, in: item.submenu)
+        }
+    }
+
     private static func menuItem(_ path: [String]) -> (NSMenu, Int)? {
         guard var menu = NSApp.mainMenu, !path.isEmpty else { return nil }
         menu.update()
@@ -557,5 +614,9 @@ enum DebugHarness {
     private static func log(_ message: String, output: URL) {
         try? Data(message.utf8).write(to: output.appendingPathComponent("harness-error.txt"))
     }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
 }
 #endif

@@ -29,3 +29,14 @@ struct OpenRequestTests {
         #expect(request.token == "t")
     }
 }
+
+struct ProfileOnlyOpenRequestTests {
+    @Test func profileWithoutPathsIsARequest() throws {
+        let request = OpenRequest(token: "t", profile: "Blog", paths: [])
+        #expect(OpenRequest(url: request.url) == request)
+    }
+
+    @Test func neitherProfileNorPathsIsNotARequest() {
+        #expect(OpenRequest(url: OpenRequest(token: "t", profile: nil, paths: []).url) == nil)
+    }
+}

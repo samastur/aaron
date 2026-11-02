@@ -1,7 +1,8 @@
 import Foundation
 
 /// A request from the `aaron` command to open files:
-/// `aaron://open?token=T&profile=P&path=/a&path=/b`. The token proves the
+/// `aaron://open?token=T&profile=P&path=/a&path=/b`, or, with a profile and
+/// no paths, a new untitled document. The token proves the
 /// request comes from the command and not from a web page or another app.
 public struct OpenRequest: Equatable, Sendable {
     public static let scheme = "aaron"
@@ -21,9 +22,11 @@ public struct OpenRequest: Equatable, Sendable {
               let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return nil }
         let token = items.first { $0.name == "token" }?.value ?? ""
         let paths = items.filter { $0.name == "path" }.compactMap(\.value).filter { !$0.isEmpty }
-        guard !token.isEmpty, !paths.isEmpty else { return nil }
+        let profile = items.first { $0.name == "profile" }?.value.flatMap { $0.isEmpty ? nil : $0 }
+        // A profile alone asks for a new untitled document with it.
+        guard !token.isEmpty, !paths.isEmpty || profile != nil else { return nil }
         self.token = token
-        profile = items.first { $0.name == "profile" }?.value.flatMap { $0.isEmpty ? nil : $0 }
+        self.profile = profile
         self.paths = paths
     }
 

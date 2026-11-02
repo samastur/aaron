@@ -14,7 +14,19 @@ struct AppCommands: Commands {
         }
 
         CommandGroup(after: .newItem) {
+            Button("New Tab") { appModel.newTab(from: window) }
+                .keyboardShortcut("t", modifiers: .command)
             NewPelicanPostButton(template: appModel.configuration(for: appModel.defaultProfileName).pelican.newPostTemplate)
+        }
+
+        CommandGroup(after: .windowArrangement) {
+            Divider()
+            ForEach(1..<9) { key in
+                Button("Select Tab \(key)") { TabKeys.select(key: key) }
+                    .keyboardShortcut(KeyEquivalent(Character(String(key))), modifiers: .command)
+            }
+            Button("Select Last Tab") { TabKeys.select(key: 9) }
+                .keyboardShortcut("9", modifiers: .command)
         }
 
         CommandGroup(after: .toolbar) {
