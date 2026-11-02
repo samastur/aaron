@@ -7,7 +7,8 @@ import ObjectiveC
 ///
 /// SwiftUI's document group installs its own `NSDocumentController`
 /// subclass, so Aaron can't install one; instead it overrides
-/// `document(for:)` on that class to report no open document for any URL.
+/// `document(for:)` (`documentForURL:`) on that class to report no open
+/// document for any URL.
 enum DocumentReopening {
     static func enable() {
         let controllerClass: AnyClass = type(of: NSDocumentController.shared)
@@ -17,5 +18,16 @@ enum DocumentReopening {
         // Adds an override to SwiftUI's subclass, or replaces its own one.
         class_replaceMethod(controllerClass, selector, imp_implementationWithBlock(block),
                             method_getTypeEncoding(method))
+
+        // After saving, NSDocument closes any other document open on the
+        // same file. That private method is made to do nothing; if a future
+        // macOS renames it, saving closes the other copies again (the
+        // `copies` smoke test catches that).
+        let closeOther = NSSelectorFromString("_closeOtherDocumentWithURL:")
+        if let method = class_getInstanceMethod(NSDocument.self, closeOther) {
+            let keep: @convention(block) (AnyObject, URL?) -> Void = { _, _ in }
+            class_replaceMethod(NSDocument.self, closeOther, imp_implementationWithBlock(keep),
+                                method_getTypeEncoding(method))
+        }
     }
 }

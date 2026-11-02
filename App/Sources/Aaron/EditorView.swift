@@ -41,15 +41,31 @@ final class EditorController {
     }
 
     /// Follows a change of the document made outside the editor, e.g.
-    /// File ▸ Revert.
+    /// File ▸ Revert, or another window saving the same file. Applied as one
+    /// undoable edit of only what differs, so the selection, the scroll
+    /// position and the undo history stay.
     func documentChanged(_ text: String) {
         guard let textView, textView.string != text else { return }
         // Deferred: replacing the text updates the model, which must not
         // happen during a view update.
         DispatchQueue.main.async { [weak self] in
             guard let textView = self?.textView, let coordinator = self?.coordinator,
-                  textView.string != coordinator.text.wrappedValue else { return }
-            textView.string = coordinator.text.wrappedValue
+                  let storage = textView.textStorage,
+                  let change = TextDiff.change(from: textView.string, to: coordinator.text.wrappedValue) else { return }
+            let selection = change.adjust(textView.selectedRange())
+            let origin = textView.enclosingScrollView?.contentView.bounds.origin
+            if textView.shouldChangeText(in: change.range, replacementString: change.replacement) {
+                storage.replaceCharacters(in: change.range, with: change.replacement)
+                textView.didChangeText()
+                textView.undoManager?.setActionName("Reload")
+            } else {
+                textView.string = coordinator.text.wrappedValue
+            }
+            textView.setSelectedRange(selection)
+            if let origin, let clip = textView.enclosingScrollView?.contentView {
+                clip.scroll(to: origin)
+                textView.enclosingScrollView?.reflectScrolledClipView(clip)
+            }
             coordinator.applySyntaxHighlighting()
             coordinator.model.textChanged(textView.string)
         }

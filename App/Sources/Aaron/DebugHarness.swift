@@ -51,6 +51,8 @@ enum DebugHarness {
         var save: Bool?
         /// Close the other windows that show the same file.
         var closeOtherCopies: Bool?
+        /// Undo in the other windows that show the same file.
+        var undoInOtherCopies: Bool?
         var review: Bool?
         var snapshot: String?
         var expect: Expectation?
@@ -103,6 +105,8 @@ enum DebugHarness {
         var allCopiesContain: String?
         /// Whether any other copy of the file is marked as edited.
         var copiesEdited: Bool?
+        /// No other copy of the file contains this text.
+        var otherCopiesLack: String?
     }
 
     private static var failures: [String] = []
@@ -227,6 +231,12 @@ enum DebugHarness {
             for other in model.appModel.windows where other !== model
                 && other.fileURL.map({ AppModel.isSameFile($0, url) }) == true {
                 other.hostWindow?.performClose(nil)
+            }
+        }
+        if step.undoInOtherCopies == true, let url = model.fileURL {
+            for other in model.appModel.windows where other !== model
+                && other.fileURL.map({ AppModel.isSameFile($0, url) }) == true {
+                other.editor.textView?.undoManager?.undo()
             }
         }
         if step.save == true {
@@ -391,6 +401,10 @@ enum DebugHarness {
             let texts = copies.map(\.editor.currentText)
             expect(texts.allSatisfy { $0.contains(value) },
                    "copies lacking \(value.debugDescription): \(texts.filter { !$0.contains(value) }.map { String($0.prefix(40)) })")
+        }
+        if let value = e.otherCopiesLack {
+            expect(!copies.contains { $0 !== model && $0.editor.currentText.contains(value) },
+                   "another copy contains \(value.debugDescription)")
         }
         if let value = e.copiesEdited {
             let edited = copies.filter { $0 !== model }.contains { $0.hostWindow?.isDocumentEdited == true }

@@ -13,6 +13,8 @@
   "save": true,
   "wait": 3.0,
   "expect": {
+   "copiesOf": 2,
+   "windowCount": 2,
    "allCopiesContain": "Copy sync marker.",
    "copiesEdited": false
   }
@@ -31,6 +33,37 @@
   "wait": 1.0,
   "expect": {
    "textContains": "Copy sync marker. After closing."
+  }
+ },
+ {
+  "openAgain": true,
+  "wait": 2.0,
+  "expect": {
+   "copiesOf": 2,
+   "windowCount": 2,
+   "allCopiesContain": "After closing."
+  }
+ },
+ {
+  "type": " Undo me.",
+  "save": true,
+  "wait": 3.0,
+  "expect": {
+   "copiesOf": 2,
+   "windowCount": 2,
+   "allCopiesContain": "Undo me.",
+   "copiesEdited": false
+  }
+ },
+ {
+  "undoInOtherCopies": true,
+  "wait": 0.5,
+  "expect": {
+   "copiesOf": 2,
+   "windowCount": 2,
+   "otherCopiesLack": "Undo me.",
+   "allCopiesContain": "After closing.",
+   "textContains": "Undo me."
   },
   "quit": true
  }
