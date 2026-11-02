@@ -52,7 +52,10 @@ from inside the app. Each scenario `App/SmokeTests/<name>.json` runs with
 renderers and tag command from `App/UITests/Fixtures`) on `<name>.md`, or
 `story.md` if there is none. Extra profiles for a scenario go in
 `App/SmokeTests/<name>.profiles/`, extra files for its work folder in
-`App/SmokeTests/<name>.files/`.
+`App/SmokeTests/<name>.files/`. With `App/SmokeTests/<name>.session.json`
+(a saved session; `$WORK` is replaced), the app starts without a document
+and restores that session; the harness drives the first window that
+appears.
 The script prints `PASS`/`FAIL` per scenario and keeps the output folder of
 failed ones.
 
@@ -91,6 +94,14 @@ Within a step, actions run first (in the order listed), then `wait`,
 | `"editor": true/false` | show/hide the editor (runs before `preview`) |
 | `"filter": "text"` | type into the file panel's filter |
 | `"openFile": "notes/a.md"` | open a file relative to the panel's root, as a click would; with `"newWindow": true` as a ⌘-click |
+| `"inTab": 1` | with `openFile`: open it from that tab (0-based) of the window |
+| `"openAgain": true` | open the window's file again, as File ▸ Open… would |
+| `"save": true` | save the window's document |
+| `"closeOtherCopies": true` | close the other windows showing the same file |
+| `"undoInOtherCopies": true` | undo in the other windows showing the same file |
+| `"dismissCopyNote": true` | close the "also open" bar |
+| `"newTab": true` | File ▸ New Tab from the window |
+| `"selectTab": 1` | choose a tab as ⌘1–⌘9 would |
 | `"preview": true/false` | show/hide the preview |
 | `"wait": seconds` | sleep |
 | `"waitIdle": true` | wait until no AI action runs and no preview is pending |
@@ -111,7 +122,14 @@ panel's state is one of these), `filesTopLevelContains`,
 is on screen, not only kept for a hidden editor), `windowCount` (counts
 windows whose editor is shown), `anyWindowTextStartsWith`,
 `profile`, `windowProfiles` (document file name → its window's profile),
-`menuItemEnabled` (menu path), `words`, `previewTextContains`, `previewTextLacks` (the
+`menuItemEnabled` (menu path), `copiesOf` (windows showing the window's
+file), `allCopiesContain`, `otherCopiesLack`, `copiesEdited` (another copy
+is marked edited), `showsCopyNote`, `otherCopiesShowNote`, `tabCount`,
+`selectedTabIndex`, `tabFiles`, `tabProfiles` (the window's tabs in order),
+`tabGroups` (file names per visible tab group), `currentSessionTabs`,
+`currentSessionProfiles` (the session Aaron would save now), `launchKind`
+(`normal` or `withRequest`), `commandKeyOwners` (key → titles of menu items
+with ⌘ and that key), `words`, `previewTextContains`, `previewTextLacks` (the
 rendered page's visible text, read with JavaScript from the app).
 
 Notes:

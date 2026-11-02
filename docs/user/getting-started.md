@@ -27,15 +27,17 @@ asks for an API key; it uses your existing subscriptions through these tools.
 Aaron edits Markdown (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`) and plain
 text files.
 
-- **File ▸ New** (⌘N) opens an empty document.
+- **File ▸ New** (⌘N) opens an empty document; **File ▸ New Tab** (⌘T)
+  opens one in a new tab (see [Windows and tabs](windows-and-tabs.md)).
 - **File ▸ New Pelican Post** (⌥⌘N) opens a new document pre-filled with your
   Pelican metadata template (see [Pelican support](pelican.md)).
 - **File ▸ Open…** (⌘O), dragging files onto the app icon, or **Open With ▸
   Aaron** in Finder open existing files.
 
 Documents are saved as UTF-8. Aaron uses the standard macOS document system:
-autosave, **File ▸ Revert To**, version browsing, recent documents and window
-restoration all work as in other Mac apps. Files in other encodings are read
+autosave, **File ▸ Revert To**, version browsing and recent documents work as
+in other Mac apps. When Aaron starts, it reopens the windows you had open
+([Windows and tabs](windows-and-tabs.md#reopening-windows-from-last-time)). Files in other encodings are read
 as Latin-1 if they are not valid UTF-8, and saved as UTF-8.
 
 ## The window
@@ -54,6 +56,9 @@ A document window has up to four parts:
    Preview** (⌥⌘P). Drag the divider to resize it.
 4. **The review panel** on the right, for AI suggestions. Toggle it with the
    **Review** toolbar button or **View ▸ Show/Hide Review** (⌥⌘R).
+
+The **Profile** menu at the right end of the toolbar chooses the window's
+[profile](profiles.md), which decides the parts above.
 
 The editor and the preview can't both be hidden. Which parts a window shows
 when it opens is set per profile; see

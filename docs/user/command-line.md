@@ -3,11 +3,14 @@
 `aaron` opens files in Aaron from Terminal or from your own scripts.
 
 ```
-aaron [--profile NAME] FILE...
+aaron [--profile NAME] [FILE...]
 aaron --list-profiles
 aaron --help
 ```
 
+- **`aaron`** without arguments starts Aaron, reopening the windows it had
+  open last time (see [Windows and tabs](windows-and-tabs.md#reopening-windows-from-last-time)),
+  or brings it to the front if it is running.
 - **`aaron FILE...`** opens the files, starting Aaron if needed, and returns
   right away. It does not wait for you to close the window. Every file must
   exist; if one doesn't, `aaron` says which and opens none of them.
@@ -15,7 +18,10 @@ aaron --help
   instead of the default. Case doesn't matter. An unknown name is an error
   that lists the profiles. A file that is already open opens again in a new
   window with the profile; the window that had it open keeps its own.
+  Without files, it opens a new document with that profile.
 - **`--list-profiles`** prints the profiles, marking the default.
+
+Starting Aaron with files or a profile doesn't reopen last time's windows.
 
 It exits with status 0 on success, 1 for a missing file, an unknown profile
 or when Aaron can't be started, and 2 for wrong usage.

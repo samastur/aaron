@@ -3,6 +3,9 @@
 | Shortcut | Command | Menu |
 |---|---|---|
 | ⌘N | New document | File |
+| ⌘T | New tab | File |
+| ⌘W | Close the window or tab | File |
+| ⌘1 … ⌘8, ⌘9 | Choose tab 1–8, the last tab | Window |
 | ⌥⌘N | New Pelican post | File |
 | ⌘O | Open | File |
 | ⌘S | Save | File |

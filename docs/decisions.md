@@ -228,3 +228,32 @@ Each one can be revisited.
 64. **A folder's identity in the panel is its path string**, not its URL:
     a folder URL may or may not end in a slash, which makes equal folders
     compare unequal.
+65. **A file can be open in several windows.** Aaron replaces
+    `documentForURL:` on SwiftUI's document controller to return nil, and
+    makes NSDocument's private `_closeOtherDocumentWithURL:` (called after
+    every save) do nothing. Both are runtime patches; the `copies` smoke
+    scenario fails if a macOS update undoes either. Moving to AppKit's
+    NSDocument with several window controllers is the fallback if they
+    break.
+66. **Copies sync by reloading on save**, which NSDocument does by itself
+    for a copy without unsaved changes. The editor applies a reload as one
+    undoable edit of only what differs (`TextDiff`), so a reading copy keeps
+    its place and undo history and isn't marked edited.
+67. **The "also open" bar** comes back in every copy when the number of
+    copies grows; closing it hides it in that window only.
+68. **New tabs and restored windows use pending hand-offs** like the file
+    panel's takeover: a record picked up by the window that appears
+    (`NewTab`, profiles by file).
+69. **Aaron restores its own session** (`session.json`) and turns off
+    macOS's window restoration for itself (`NSQuitAlwaysKeepsWindows` set to
+    false in its defaults), so a start with a file doesn't bring back old
+    windows and untitled documents ask at quit.
+70. **Only a normal start restores and saves the session.** A start counts
+    as "with a request" when macOS says so (`launchIsDefault`), when files
+    are given as arguments, when a document or `aaron://` request arrives
+    during launch (checked again 300 ms later), or with
+    `--aaron-cli-launch`, which the `aaron` command passes when it has to
+    start Aaron before sending files. Saving stops when quitting starts, so
+    closing windows doesn't empty the saved session.
+71. **The profile menu is last in the toolbar**, since the profile decides
+    all the panes before it.

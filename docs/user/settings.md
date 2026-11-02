@@ -11,6 +11,12 @@ automatically.
 Add, rename, delete and import profiles, and choose the default. See
 [Profiles](profiles.md).
 
+**Startup (all profiles) ▸ Reopen windows from last time** (on by default):
+whether a normal start reopens the windows and tabs of the last one. It is
+stored as `reopenWindows` in `profiles.json`, next to the default profile;
+the windows themselves are saved in `session.json`. See
+[Windows and tabs](windows-and-tabs.md#reopening-windows-from-last-time).
+
 ## General
 
 - **Font size** and **Use a monospaced font**: the editor's font
