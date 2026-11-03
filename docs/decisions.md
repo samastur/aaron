@@ -257,3 +257,13 @@ Each one can be revisited.
     closing windows doesn't empty the saved session.
 71. **The profile menu is last in the toolbar**, since the profile decides
     all the panes before it.
+72. **Copies turn off when macOS changes what they rely on.** Before
+    patching, Aaron checks that both methods exist with the expected type
+    encodings, and the first document window checks that its classes run
+    the replacements (not an override). Both patches apply or neither:
+    with only the lookup patched, saving would close the other copies.
+    Without them Aaron behaves as before copies: an open file's window comes
+    forward (the `aaron` command switches its profile), and a restored
+    session opens each file once. An alert says so once per Aaron build and
+    macOS version. A method that still exists but is no longer called can't
+    be detected; the `copies` smoke scenario catches that.

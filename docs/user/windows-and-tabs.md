@@ -40,6 +40,12 @@ A bar at the top of each copy says the file is also open in another
 window. Close it with its **×**; it comes back if the file is opened in yet
 another window.
 
+Opening a file in several windows relies on internal parts of macOS that
+a macOS update may change. If that happens, Aaron turns the feature off
+and says so once: a file then opens in one window only, and opening it
+again brings that window to the front. Everything else keeps working; a
+newer build of Aaron brings the feature back.
+
 ## Reopening windows from last time
 
 When Aaron starts, it reopens the document windows and tabs it had open

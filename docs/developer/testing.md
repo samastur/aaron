@@ -55,7 +55,11 @@ renderers and tag command from `App/UITests/Fixtures`) on `<name>.md`, or
 `App/SmokeTests/<name>.files/`. With `App/SmokeTests/<name>.session.json`
 (a saved session; `$WORK` is replaced), the app starts without a document
 and restores that session; the harness drives the first window that
-appears.
+appears. `App/SmokeTests/<name>.env` adds environment variables
+(`NAME=value` lines), e.g. `AARON_SIMULATE_API_CHANGE=1`, with which a
+Debug build acts as if macOS had renamed the private method that opening a
+file in several windows relies on (`api-change` scenario). While a script
+runs, alerts are recorded instead of shown (`alertContains`).
 The script prints `PASS`/`FAIL` per scenario and keeps the output folder of
 failed ones.
 
@@ -129,7 +133,7 @@ is marked edited), `showsCopyNote`, `otherCopiesShowNote`, `tabCount`,
 `tabGroups` (file names per visible tab group), `currentSessionTabs`,
 `currentSessionProfiles` (the session Aaron would save now), `launchKind`
 (`normal` or `withRequest`), `commandKeyOwners` (key → titles of menu items
-with ⌘ and that key), `words`, `previewTextContains`, `previewTextLacks` (the
+with ⌘ and that key), `alertContains` (an alert shown so far), `words`, `previewTextContains`, `previewTextLacks` (the
 rendered page's visible text, read with JavaScript from the app).
 
 Notes:

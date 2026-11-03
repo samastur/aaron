@@ -92,4 +92,17 @@ final class OpenRequestHandlingTests: XCTestCase {
         app.handle(try request(app, profile: "Blog", paths: ["/tmp/does-not-exist.md"]))
         XCTAssertNil(app.pendingProfile(for: URL(fileURLWithPath: "/tmp/does-not-exist.md")))
     }
+
+    func testWithoutCopiesAnOpenFileSwitchesItsWindowsProfile() throws {
+        let app = try makeApp()
+        app.canOpenCopies = false
+        let file = URL(fileURLWithPath: "/tmp/open.md")
+        let window = DocumentWindowModel(appModel: app)
+        app.register(window)
+        window.documentOpened(text: "x", fileURL: file)
+        app.handle(try request(app, profile: "Blog", paths: ["/tmp/./open.md"]))
+        XCTAssertEqual(window.profileName, "Blog")
+        XCTAssertEqual(opened, [])
+        XCTAssertNil(app.pendingProfile(for: file))
+    }
 }

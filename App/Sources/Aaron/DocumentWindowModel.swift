@@ -19,6 +19,7 @@ final class DocumentWindowModel {
     @ObservationIgnored weak var hostWindow: NSWindow? {
         didSet {
             guard let hostWindow, hostWindow !== oldValue else { return }
+            appModel.checkCopies(in: hostWindow)
             if let old = replacingWindow {
                 replacingWindow = nil
                 Self.take(placeOf: old, by: hostWindow)

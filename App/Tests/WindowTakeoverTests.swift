@@ -187,4 +187,26 @@ final class WindowTakeoverTests: XCTestCase {
         XCTAssertEqual(DocumentWindowModel.reviewLossMessage(openSuggestions: 2, runningAction: "Style", documentName: "first.md"),
                        "The running “Style” action will be cancelled. The 2 open suggestions for “first.md” will be lost.")
     }
+
+    // Without copies (a macOS update changed what they rely on), a file
+    // open in another window comes forward, as before copies existed.
+
+    func testWithoutCopiesAFileOpenElsewhereComesForward() {
+        app.canOpenCopies = false
+        let first = window("a.md")
+        let second = window("b.md")
+        XCTAssertEqual(app.openFromPanel(file("b.md"), from: first, inNewWindow: false), .broughtForward)
+        XCTAssertEqual(app.openFromPanel(file("b.md"), from: first, inNewWindow: true), .broughtForward)
+        XCTAssertEqual(opened, [])
+        XCTAssertTrue(app.pendingTakeovers.isEmpty)
+        XCTAssertTrue(app.pendingProfiles.isEmpty)
+        XCTAssertEqual(second.fileURL, file("b.md"))
+    }
+
+    func testWithoutCopiesTheWindowsOwnFileDoesNothingInANewWindow() {
+        app.canOpenCopies = false
+        let first = window("a.md")
+        XCTAssertEqual(app.openFromPanel(file("a.md"), from: first, inNewWindow: true), .nothing)
+        XCTAssertEqual(opened, [])
+    }
 }

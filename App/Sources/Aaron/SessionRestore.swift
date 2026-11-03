@@ -78,6 +78,8 @@ extension AppModel {
             var previous: NSWindow?
             var tabs: [NSWindow] = []
             for tab in group.tabs {
+                // Without copies, a file saved in two windows opens once.
+                if !canOpenCopies, windowShowing(URL(fileURLWithPath: tab.path)) != nil { continue }
                 guard let window = await open(URL(fileURLWithPath: tab.path), profile: tab.profile) else { continue }
                 if let previous {
                     previous.addTabbedWindow(window, ordered: .above)

@@ -1,0 +1,42 @@
+[
+ {
+  "wait": 2.5,
+  "expect": {
+   "windowCount": 1,
+   "alertContains": "A file can only be open in one window"
+  }
+ },
+ {
+  "openAgain": true,
+  "wait": 2.0,
+  "expect": {
+   "windowCount": 1,
+   "copiesOf": 1,
+   "showsCopyNote": false
+  }
+ },
+ {
+  "cli": [
+   "--profile",
+   "plain",
+   "$WORK/story.md"
+  ],
+  "wait": 3.0,
+  "expect": {
+   "windowCount": 1,
+   "profile": "Plain"
+  }
+ },
+ {
+  "caretAtEnd": true,
+  "type": "\nStill saves.",
+  "save": true,
+  "wait": 1.5,
+  "expect": {
+   "windowCount": 1,
+   "textContains": "Still saves.",
+   "noSheets": true
+  },
+  "quit": true
+ }
+]

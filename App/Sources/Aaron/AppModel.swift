@@ -55,6 +55,18 @@ final class AppModel {
             }
         }
     }
+    /// Whether a file can open in several windows; off when a macOS update
+    /// changed what that relies on (see DocumentController.swift).
+    @ObservationIgnored var canOpenCopies = true
+    /// Why copies are off.
+    @ObservationIgnored var copiesProblem: String?
+    /// Shows an alert with a title and message; replaced in tests.
+    @ObservationIgnored var showAlert: (String, String) -> Void = { title, message in
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.runModal()
+    }
     /// Untitled documents being opened as new tabs.
     @ObservationIgnored var pendingNewTabs: [NewTab] = []
     /// Creates an untitled document; replaced in tests.
@@ -88,7 +100,15 @@ final class AppModel {
     /// Info.plist (different for Debug builds), or `AARON_SUPPORT_DIR`.
     static func makeDefault() -> AppModel {
         let folder = Bundle.main.object(forInfoDictionaryKey: "AaronSupportFolderName") as? String ?? "Aaron"
-        return AppModel(store: ProfileStore(directory: ProfileStore.defaultDirectory(folderName: folder)))
+        let model = AppModel(store: ProfileStore(directory: ProfileStore.defaultDirectory(folderName: folder)))
+        #if DEBUG
+        if DebugHarness.isScripted {
+            model.showAlert = { DebugHarness.alerts.append("\($0)\n\($1)") }
+            // Each scenario run sees the problem reported afresh.
+            UserDefaults.standard.removeObject(forKey: copiesProblemReportedKey)
+        }
+        #endif
+        return model
     }
 
     // MARK: - Configurations

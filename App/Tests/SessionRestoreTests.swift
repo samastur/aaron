@@ -68,4 +68,24 @@ final class SessionRestoreTests: XCTestCase {
         XCTAssertEqual(models.map { $0.fileURL?.lastPathComponent }, ["a.md", "b.md"])
         XCTAssertEqual(models.map(\.profileName), [app.defaultProfileName, "Blog"])
     }
+
+    func testWithoutCopiesAFileSavedTwiceOpensOnceWithoutWaiting() async throws {
+        app.canOpenCopies = false
+        let stub = app.openDocument
+        // As AppKit does: an open file only comes forward.
+        app.openDocument = { [weak self] url, completion in
+            if self?.models.contains(where: { $0.fileURL == url }) == true { return completion(nil) }
+            stub(url, completion)
+        }
+        let path = try file("a.md")
+        let twice = SavedSession(groups: [SavedTabGroup(frame: "{{0, 0}, {600, 400}}",
+                                                         tabs: [SavedTab(path: path, profile: "Default"),
+                                                                SavedTab(path: path, profile: "Default")],
+                                                         selected: 1)],
+                                 frontGroup: 0)
+        let start = Date()
+        await app.restore(twice)
+        XCTAssertEqual(models.count, 1)
+        XCTAssertLessThan(Date().timeIntervalSince(start), 1)
+    }
 }

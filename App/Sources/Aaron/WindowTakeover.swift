@@ -23,6 +23,9 @@ struct Takeover {
 enum PanelOpenResult: Equatable {
     /// The window already shows the file.
     case nothing
+    /// Another window shows it and came to the front (only when a file
+    /// can't be open in several windows).
+    case broughtForward
     case newWindow
     case replaced
 }
@@ -35,6 +38,11 @@ extension AppModel {
     @discardableResult
     func openFromPanel(_ file: URL, from window: DocumentWindowModel, inNewWindow: Bool) -> PanelOpenResult {
         if !inNewWindow, let current = window.fileURL, Self.isSameFile(current, file) { return .nothing }
+        if !canOpenCopies, let other = windowShowing(file) {
+            if other === window { return .nothing }
+            other.hostWindow?.makeKeyAndOrderFront(nil)
+            return .broughtForward
+        }
         if inNewWindow {
             openDocument(file, profile: window.profileName)
             return .newWindow
@@ -47,6 +55,11 @@ extension AppModel {
             if error != nil { self?.pendingTakeovers.removeAll { $0.id == takeover.id } }
         }
         return .replaced
+    }
+
+    /// A window that shows this file, if any.
+    func windowShowing(_ file: URL) -> DocumentWindowModel? {
+        windows.first { $0.fileURL.map { Self.isSameFile($0, file) } == true }
     }
 
     /// Changes a profile's file panel root; nil means the home folder.

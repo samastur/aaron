@@ -31,7 +31,13 @@ extension AppModel {
         }
         for path in request.paths {
             let file = URL(fileURLWithPath: path).standardizedFileURL
-            // An open file opens again, as a new copy with the profile.
+            // Without copies, the file's window switches to the profile.
+            if !canOpenCopies, let window = windowShowing(file) {
+                if let profile { window.profileName = profile }
+                window.hostWindow?.makeKeyAndOrderFront(nil)
+                continue
+            }
+            // Otherwise an open file opens again, as a new copy with the profile.
             if let profile {
                 openDocument(file, profile: profile)
             } else {

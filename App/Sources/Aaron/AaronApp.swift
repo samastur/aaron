@@ -48,6 +48,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let opened = appModel.receivedOpenRequest || NSDocumentController.shared.documents.contains { $0.fileURL != nil }
         appModel.launchKind = LaunchKind.decide(isDefaultLaunch: isDefault, arguments: ProcessInfo.processInfo.arguments,
                                                 openedSomething: opened)
+        if appModel.copiesProblem != nil {
+            // After the first windows are up, and outside of launch.
+            Task {
+                try? await Task.sleep(for: .seconds(1))
+                appModel.reportCopiesProblem()
+            }
+        }
         guard appModel.sessionToRestore() != nil else { return appModel.scheduleSessionSave() }
         Task {
             // Files and requests can arrive just after launch finishes.
@@ -71,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Before files given at launch are opened.
-        DocumentReopening.enable()
+        if let problem = DocumentReopening.enable() { appModel.turnOffCopies(because: problem) }
         // Before launch finishes, so a request that starts the app is not missed.
         NSAppleEventManager.shared().setEventHandler(
             self, andSelector: #selector(handleGetURL(_:replyEvent:)),

@@ -40,7 +40,10 @@ for name in $scenarios; do
     sed -e "s|\$WORK|$work|g" $SMOKE/$name.session.json > $work/support/session.json
     open_args=()
   fi
-  AARON_SUPPORT_DIR=$work/support WORK=$work AARON_DEBUG_SCRIPT=$SMOKE/$name.json AARON_SNAPSHOT_DIR=$work/out \
+  # Extra environment for a scenario: App/SmokeTests/<name>.env, NAME=value lines.
+  extra_env=()
+  [[ -f $SMOKE/$name.env ]] && extra_env=(${(f)"$(<$SMOKE/$name.env)"})
+  env $extra_env AARON_SUPPORT_DIR=$work/support WORK=$work AARON_DEBUG_SCRIPT=$SMOKE/$name.json AARON_SNAPSHOT_DIR=$work/out \
     timeout 120 $APP $open_args -ApplePersistenceIgnoreState YES > $work/app.log 2>&1
   if [[ -f $work/out/result.txt ]] && [[ $(head -1 $work/out/result.txt) == PASS ]]; then
     print "PASS  $name"

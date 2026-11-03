@@ -135,7 +135,14 @@ enum DebugHarness {
         var commandKeyOwners: [String: [String]]?
         /// Whether the other copies of the file show the note.
         var otherCopiesShowNote: Bool?
+        /// Some alert shown so far contains this text.
+        var alertContains: String?
     }
+
+    /// Whether a script runs: alerts are then recorded instead of shown.
+    static var isScripted: Bool { ProcessInfo.processInfo.environment["AARON_DEBUG_SCRIPT"] != nil }
+    /// Titles and messages of the alerts shown so far.
+    static var alerts: [String] = []
 
     private static var failures: [String] = []
     /// Why the scenario could not be checked here, e.g. menus need an active app.
@@ -432,6 +439,9 @@ enum DebugHarness {
             return AppModel.isSameFile(a, b)
         }
         if let value = e.copiesOf { expect(copies.count == value, "copies of the file: \(copies.count)") }
+        if let value = e.alertContains {
+            expect(alerts.contains { $0.contains(value) }, "no alert contains \(value.debugDescription): \(alerts)")
+        }
         if let value = e.allCopiesContain {
             let texts = copies.map(\.editor.currentText)
             expect(texts.allSatisfy { $0.contains(value) },
