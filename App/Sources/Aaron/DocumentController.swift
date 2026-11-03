@@ -10,7 +10,7 @@ import ObjectiveC
 /// `document(for:)` (`documentForURL:`) on that class to report no open
 /// document for any URL.
 enum DocumentReopening {
-    static func enable() {
+    @MainActor static func enable() {
         let controllerClass: AnyClass = type(of: NSDocumentController.shared)
         let selector = NSSelectorFromString("documentForURL:")
         guard let method = class_getInstanceMethod(controllerClass, selector) else { return }

@@ -22,7 +22,7 @@ enum TabKeys {
     }
 
     /// Chooses a tab of the key window.
-    static func select(key: Int) {
+    @MainActor static func select(key: Int) {
         guard let window = NSApp.keyWindow, let tabs = window.tabbedWindows,
               let index = index(forKey: key, tabCount: tabs.count) else { return }
         tabs[index].makeKeyAndOrderFront(nil)
